@@ -3,7 +3,6 @@
   "functions": {
     "app/main.py": {
       "maxDuration": 60,
-      "includeFiles": "app/mcp_servers/**",
       "excludeFiles": "{tests/**,__tests__/**,**/*.test.py,**/test_*.py,migrations/sql/**,scripts/**,data/**,.pytest_cache/**}"
     }
   }

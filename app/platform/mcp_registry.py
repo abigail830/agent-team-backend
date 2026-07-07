@@ -1,8 +1,6 @@
 import logging
 import os
-import sys
 import uuid
-from pathlib import Path
 from typing import Any
 
 from agent_framework import MCPStdioTool, MCPStreamableHTTPTool
@@ -14,16 +12,10 @@ from app.platform.allowed_tools import mcp_remote_tools_for_server
 from app.platform.mcp_config import resolve_runtime_config_safe
 from app.platform.profile_loader import mcp_tool_name
 from app.platform.secret_store import SecretStoreError
+from app.tools.database import build_mysql_tools, build_postgres_tools
 
 logger = logging.getLogger(__name__)
 IS_VERCEL = os.getenv("VERCEL") == "1"
-_BACKEND_ROOT = Path(__file__).resolve().parents[2]
-_PYTHON_MCP_SERVERS = {
-    "mcp-postgres": "postgres.py",
-    "mcp-postgres@latest": "postgres.py",
-    "@benborla29/mcp-server-mysql": "mysql.py",
-    "@benborla29/mcp-server-mysql@latest": "mysql.py",
-}
 
 
 class McpRegistry:
@@ -50,7 +42,11 @@ class McpRegistry:
         tools: list[Any] = []
         for row in result.scalars().all():
             tool = self._build_tool(row, profile_allowed=profile_allowed)
-            if tool is not None:
+            if tool is None:
+                continue
+            if isinstance(tool, list):
+                tools.extend(tool)
+            else:
                 tools.append(tool)
         return tools
 
@@ -59,7 +55,7 @@ class McpRegistry:
         row: McpServer,
         *,
         profile_allowed: list[str] | None = None,
-    ) -> MCPStdioTool | MCPStreamableHTTPTool | None:
+    ) -> MCPStdioTool | MCPStreamableHTTPTool | list[Any] | None:
         try:
             config = resolve_runtime_config_safe(row.connection or {})
         except SecretStoreError:
@@ -93,66 +89,46 @@ class McpRegistry:
                 allowed_tools=mcp_allowed,
             )
 
+        if IS_VERCEL:
+            native = _build_native_db_tools(tool_name, config.get("env") or {}, mcp_allowed)
+            if native:
+                logger.info(
+                    "Using in-process database tools on Vercel for MCP server %s",
+                    tool_name,
+                )
+                return native
+            logger.warning(
+                "No in-process database tool mapping for MCP server %s on Vercel",
+                tool_name,
+            )
+            return None
+
         command = config.get("command")
         if not command:
             logger.warning("MCP server %s missing command", row.name)
             return None
-        command, args, env = _resolve_stdio_command_for_runtime(
-            str(command),
-            list(config.get("args") or []),
-            config.get("env"),
-        )
         return MCPStdioTool(
             name=tool_name,
-            command=command,
-            args=args,
-            env=env,
+            command=str(command),
+            args=list(config.get("args") or []),
+            env=config.get("env"),
             description=description,
             allowed_tools=mcp_allowed,
         )
 
 
-def _resolve_stdio_command_for_runtime(
-    command: str,
-    args: list[str],
-    env: dict[str, str] | None,
-) -> tuple[str, list[str], dict[str, str] | None]:
-    """On Vercel, run Python stdio MCP servers instead of unavailable Node packages."""
-    if not IS_VERCEL:
-        return command, args, env
-
-    if Path(command).name != "npx":
-        return command, args, _vercel_child_env(env)
-
-    package_name = _npx_package_name(args)
-    server_name = _PYTHON_MCP_SERVERS.get(package_name or "")
-    if not server_name:
-        logger.warning("Cannot rewrite npx MCP command on Vercel: args=%s", args)
-        return command, args, _vercel_child_env(env)
-
-    server_path = _BACKEND_ROOT / "app" / "mcp_servers" / server_name
-    if not server_path.exists():
-        logger.warning("Python MCP server missing on Vercel: %s", server_path)
-    logger.info("Rewriting Vercel MCP command npx %s -> %s %s", package_name, sys.executable, server_path)
-    return sys.executable, [str(server_path)], _vercel_child_env(env)
-
-
-def _npx_package_name(args: list[str]) -> str | None:
-    for arg in args:
-        value = str(arg)
-        if value == "-y" or value.startswith("-"):
-            continue
-        return value
+def _build_native_db_tools(
+    server_name: str,
+    env: dict[str, str],
+    allowed_remote_tools: list[str] | None,
+) -> list[Any] | None:
+    if server_name == "postgres":
+        database_url = env.get("DATABASE_URL", "")
+        if not database_url:
+            return None
+        return build_postgres_tools(database_url, allowed_remote_tools=allowed_remote_tools)
+    if server_name == "mysql":
+        if not env.get("MYSQL_HOST"):
+            return None
+        return build_mysql_tools(env, allowed_remote_tools=allowed_remote_tools)
     return None
-
-
-def _vercel_child_env(env: dict[str, str] | None) -> dict[str, str]:
-    # Vercel's Python runtime relies on env such as PYTHONPATH to expose installed
-    # packages from the function bundle. MCPStdioTool passes this map to the child
-    # process, so preserve the runtime env and overlay per-server secrets.
-    merged = dict(os.environ)
-    merged.update(env or {})
-    merged.setdefault("HOME", "/tmp")
-    merged.setdefault("npm_config_cache", "/tmp/.npm")
-    merged.setdefault("PYTHONUNBUFFERED", "1")
-    return merged
