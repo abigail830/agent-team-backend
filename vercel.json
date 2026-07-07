@@ -1,8 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci",
   "functions": {
     "app/main.py": {
       "maxDuration": 60,
+      "includeFiles": "node_modules/**",
       "excludeFiles": "{tests/**,__tests__/**,**/*.test.py,**/test_*.py,migrations/sql/**,scripts/**,data/**,.pytest_cache/**}"
     }
   }
