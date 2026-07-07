@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -17,6 +18,7 @@ from app.platform.model_registry import ModelProviderRegistry
 from app.platform.utility_models import UtilityModelRegistry
 
 logger = logging.getLogger(__name__)
+IS_VERCEL = os.getenv("VERCEL") == "1"
 
 
 @asynccontextmanager
@@ -28,33 +30,39 @@ async def lifespan(app: FastAPI):
         logger.info("Database connection OK")
     except Exception:
         logger.exception("Database connection failed")
-        raise
+        if not IS_VERCEL:
+            raise
     try:
         await check_redis_connection()
         logger.info("Redis connection OK")
     except Exception:
         logger.warning("Redis connection failed — session cache will use DB only")
-    factory = get_async_session_factory()
-    disk_profiles = discover_agent_profiles()
-    logger.info("Syncing agent profiles from disk (%d profiles)...", len(disk_profiles))
-    async with factory() as session:
-        await ensure_dev_seed(session)
-        synced = (
-            await session.execute(
-                select(func.count()).select_from(AgentModel).where(AgentModel.slug.isnot(None))
-            )
-        ).scalar_one()
-    logger.info(
-        "Agent profiles synced: %d on disk (%s) -> %d in database",
-        len(disk_profiles),
-        ", ".join(p.slug for p in disk_profiles) or "none",
-        synced,
-    )
-    logger.info(
-        "Models: primary=%s utility=%s",
-        settings.azure_openai_deployment,
-        settings.utility_deployment(),
-    )
+    try:
+        factory = get_async_session_factory()
+        disk_profiles = discover_agent_profiles()
+        logger.info("Syncing agent profiles from disk (%d profiles)...", len(disk_profiles))
+        async with factory() as session:
+            await ensure_dev_seed(session)
+            synced = (
+                await session.execute(
+                    select(func.count()).select_from(AgentModel).where(AgentModel.slug.isnot(None))
+                )
+            ).scalar_one()
+        logger.info(
+            "Agent profiles synced: %d on disk (%s) -> %d in database",
+            len(disk_profiles),
+            ", ".join(p.slug for p in disk_profiles) or "none",
+            synced,
+        )
+        logger.info(
+            "Models: primary=%s utility=%s",
+            settings.azure_openai_deployment,
+            settings.utility_deployment(),
+        )
+    except Exception:
+        logger.exception("Startup seed/profile sync failed")
+        if not IS_VERCEL:
+            raise
     yield
 
 
