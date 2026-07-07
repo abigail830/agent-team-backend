@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm ci",
   "functions": {
     "app/main.py": {
       "maxDuration": 60,
