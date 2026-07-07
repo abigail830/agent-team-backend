@@ -147,7 +147,12 @@ def _npx_package_name(args: list[str]) -> str | None:
 
 
 def _vercel_child_env(env: dict[str, str] | None) -> dict[str, str]:
-    merged = dict(env or {})
+    # Vercel's Python runtime relies on env such as PYTHONPATH to expose installed
+    # packages from the function bundle. MCPStdioTool passes this map to the child
+    # process, so preserve the runtime env and overlay per-server secrets.
+    merged = dict(os.environ)
+    merged.update(env or {})
     merged.setdefault("HOME", "/tmp")
     merged.setdefault("npm_config_cache", "/tmp/.npm")
+    merged.setdefault("PYTHONUNBUFFERED", "1")
     return merged
