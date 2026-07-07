@@ -1,12 +1,13 @@
+import json
 import ssl
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from dotenv import load_dotenv
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[1]
 _ENV_FILE = _BACKEND_ROOT / ".env"
@@ -89,7 +90,7 @@ class Settings(BaseSettings):
 
     app_name: str = "agent-platform"
     debug: bool = False
-    cors_origins: list[str] = Field(
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"],
         validation_alias="CORS_ORIGINS",
     )
@@ -98,6 +99,9 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cors_origins(cls, value: object) -> object:
         if isinstance(value, str):
+            stripped = value.strip()
+            if stripped.startswith("["):
+                return json.loads(stripped)
             return [part.strip() for part in value.split(",") if part.strip()]
         return value
 
