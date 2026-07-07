@@ -46,8 +46,13 @@ def test_save_diagram_artifact_to_blob(monkeypatch):
 
 
 def test_blob_put_uses_token(monkeypatch):
-    monkeypatch.setenv("BLOB_READ_WRITE_TOKEN", "test-token")
+    monkeypatch.setenv(
+        "BLOB_READ_WRITE_TOKEN",
+        "vercel_blob_rw_teststore_testsecret",
+    )
     monkeypatch.setenv("ARTIFACT_STORAGE", "vercel_blob")
+    monkeypatch.setenv("BLOB_ACCESS", "private")
+    monkeypatch.setenv("BLOB_STORE_ID", "teststore")
     get_settings.cache_clear()
 
     mock_response = MagicMock()
@@ -61,7 +66,11 @@ def test_blob_put_uses_token(monkeypatch):
 
     result = blob_client.blob_put("demo.txt", b"hello", content_type="text/plain")
     assert result["pathname"] == "demo.txt"
+    call_url = mock_client.put.call_args.args[0]
+    assert call_url.startswith("https://vercel.com/api/blob/?pathname=")
     headers = mock_client.put.call_args.kwargs["headers"]
-    assert headers["authorization"] == "Bearer test-token"
+    assert headers["authorization"] == "Bearer vercel_blob_rw_teststore_testsecret"
+    assert headers["x-vercel-blob-access"] == "private"
+    assert headers["x-vercel-blob-store-id"] == "teststore"
 
     get_settings.cache_clear()
