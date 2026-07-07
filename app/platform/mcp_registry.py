@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import uuid
 from pathlib import Path
 from typing import Any
@@ -17,11 +18,11 @@ from app.platform.secret_store import SecretStoreError
 logger = logging.getLogger(__name__)
 IS_VERCEL = os.getenv("VERCEL") == "1"
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
-_VENDOR_MCP_BUNDLES = {
-    "mcp-postgres": "mcp-postgres.mjs",
-    "mcp-postgres@latest": "mcp-postgres.mjs",
-    "@benborla29/mcp-server-mysql": "mcp-server-mysql.cjs",
-    "@benborla29/mcp-server-mysql@latest": "mcp-server-mysql.cjs",
+_PYTHON_MCP_SERVERS = {
+    "mcp-postgres": "postgres.py",
+    "mcp-postgres@latest": "postgres.py",
+    "@benborla29/mcp-server-mysql": "mysql.py",
+    "@benborla29/mcp-server-mysql@latest": "mysql.py",
 }
 
 
@@ -116,7 +117,7 @@ def _resolve_stdio_command_for_runtime(
     args: list[str],
     env: dict[str, str] | None,
 ) -> tuple[str, list[str], dict[str, str] | None]:
-    """On Vercel, run vendored MCP bundles instead of runtime `npx -y <package>`."""
+    """On Vercel, run Python stdio MCP servers instead of unavailable Node packages."""
     if not IS_VERCEL:
         return command, args, env
 
@@ -124,16 +125,16 @@ def _resolve_stdio_command_for_runtime(
         return command, args, _vercel_child_env(env)
 
     package_name = _npx_package_name(args)
-    bundle_name = _VENDOR_MCP_BUNDLES.get(package_name or "")
-    if not bundle_name:
+    server_name = _PYTHON_MCP_SERVERS.get(package_name or "")
+    if not server_name:
         logger.warning("Cannot rewrite npx MCP command on Vercel: args=%s", args)
         return command, args, _vercel_child_env(env)
 
-    bundle_path = _BACKEND_ROOT / "vendor" / "mcp" / bundle_name
-    if not bundle_path.exists():
-        logger.warning("Vendored MCP bundle missing on Vercel: %s", bundle_path)
-    logger.info("Rewriting Vercel MCP command npx %s -> node %s", package_name, bundle_path)
-    return "node", [str(bundle_path)], _vercel_child_env(env)
+    server_path = _BACKEND_ROOT / "app" / "mcp_servers" / server_name
+    if not server_path.exists():
+        logger.warning("Python MCP server missing on Vercel: %s", server_path)
+    logger.info("Rewriting Vercel MCP command npx %s -> %s %s", package_name, sys.executable, server_path)
+    return sys.executable, [str(server_path)], _vercel_child_env(env)
 
 
 def _npx_package_name(args: list[str]) -> str | None:

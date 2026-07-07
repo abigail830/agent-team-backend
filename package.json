@@ -1,7 +1,0 @@
-{
-  "private": true,
-  "dependencies": {
-    "@benborla29/mcp-server-mysql": "latest",
-    "mcp-postgres": "latest"
-  }
-}
