@@ -17,11 +17,11 @@ from app.platform.secret_store import SecretStoreError
 logger = logging.getLogger(__name__)
 IS_VERCEL = os.getenv("VERCEL") == "1"
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
-_NPM_MCP_BINS = {
-    "mcp-postgres": "mcp-postgres",
-    "mcp-postgres@latest": "mcp-postgres",
-    "@benborla29/mcp-server-mysql": "mcp-server-mysql",
-    "@benborla29/mcp-server-mysql@latest": "mcp-server-mysql",
+_VENDOR_MCP_BUNDLES = {
+    "mcp-postgres": "mcp-postgres.mjs",
+    "mcp-postgres@latest": "mcp-postgres.mjs",
+    "@benborla29/mcp-server-mysql": "mcp-server-mysql.cjs",
+    "@benborla29/mcp-server-mysql@latest": "mcp-server-mysql.cjs",
 }
 
 
@@ -116,7 +116,7 @@ def _resolve_stdio_command_for_runtime(
     args: list[str],
     env: dict[str, str] | None,
 ) -> tuple[str, list[str], dict[str, str] | None]:
-    """On Vercel, run bundled MCP binaries instead of runtime `npx -y <package>`."""
+    """On Vercel, run vendored MCP bundles instead of runtime `npx -y <package>`."""
     if not IS_VERCEL:
         return command, args, env
 
@@ -124,16 +124,16 @@ def _resolve_stdio_command_for_runtime(
         return command, args, _vercel_child_env(env)
 
     package_name = _npx_package_name(args)
-    bin_name = _NPM_MCP_BINS.get(package_name or "")
-    if not bin_name:
+    bundle_name = _VENDOR_MCP_BUNDLES.get(package_name or "")
+    if not bundle_name:
         logger.warning("Cannot rewrite npx MCP command on Vercel: args=%s", args)
         return command, args, _vercel_child_env(env)
 
-    bin_path = _BACKEND_ROOT / "node_modules" / ".bin" / bin_name
-    if not bin_path.exists():
-        logger.warning("Bundled MCP binary missing on Vercel: %s", bin_path)
-    logger.info("Rewriting Vercel MCP command npx %s -> %s", package_name, bin_path)
-    return str(bin_path), [], _vercel_child_env(env)
+    bundle_path = _BACKEND_ROOT / "vendor" / "mcp" / bundle_name
+    if not bundle_path.exists():
+        logger.warning("Vendored MCP bundle missing on Vercel: %s", bundle_path)
+    logger.info("Rewriting Vercel MCP command npx %s -> node %s", package_name, bundle_path)
+    return "node", [str(bundle_path)], _vercel_child_env(env)
 
 
 def _npx_package_name(args: list[str]) -> str | None:
@@ -147,8 +147,6 @@ def _npx_package_name(args: list[str]) -> str | None:
 
 def _vercel_child_env(env: dict[str, str] | None) -> dict[str, str]:
     merged = dict(env or {})
-    node_bin = str(_BACKEND_ROOT / "node_modules" / ".bin")
-    merged["PATH"] = f"{node_bin}:{os.environ.get('PATH', '')}"
     merged.setdefault("HOME", "/tmp")
     merged.setdefault("npm_config_cache", "/tmp/.npm")
     return merged
