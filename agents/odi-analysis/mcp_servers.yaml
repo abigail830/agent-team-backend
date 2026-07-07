@@ -1,0 +1,11 @@
+# MCP servers for this agent only. Reference by key in profile.yaml (mcp_servers.postgres).
+# Per-agent env (DATABASE_URL, credentials) belongs in profile.yaml, not here.
+#
+# Use mcp-postgres (not deprecated @modelcontextprotocol/server-postgres) for schema tools:
+# list_tables, describe_table, get_schema, query_data.
+servers:
+  postgres:
+    command: npx
+    args:
+      - -y
+      - mcp-postgres@latest

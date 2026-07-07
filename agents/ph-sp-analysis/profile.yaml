@@ -1,0 +1,40 @@
+id: ph-sp-analysis
+name: "Proposal Analyst - PH"
+description: "Smart Proposal PH usage, product mix, pricing, and deal analytics (read-only MySQL)"
+
+model_provider: azure_anthropic
+model: ${CLAUDE_AZURE_FOUNDRY_MODEL}
+prompt_file: system_prompt.md
+skills_dir: skills
+
+mcp_servers:
+  mysql:
+    env:
+      MYSQL_HOST: ${PH_SP_MYSQL_HOST}
+      MYSQL_PORT: ${PH_SP_MYSQL_PORT}
+      MYSQL_USER: ${PH_SP_MYSQL_USER}
+      MYSQL_PASSWORD: ${PH_SP_MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${PH_SP_MYSQL_DATABASE}
+allowed_tools:
+  - list_sql_results
+  - suggest_visualization
+  - mysql_list_databases
+  - mysql_list_tables
+  - mysql_describe_table
+  - mysql_execute_query
+
+hooks:
+  sql_validator:
+    max_rows: 2000
+  result_truncator:
+    max_observation_bytes: 50000
+  sql_viz:
+    auto: false
+    min_rows: 3
+
+memory:
+  working_set_turns: 15
+  cold_resume_max_turns: 10
+  slim:
+    enabled: true
+    default_preview_chars: 200  
