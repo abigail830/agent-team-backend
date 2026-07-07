@@ -74,13 +74,22 @@ def _settings_value_for_env_key(key: str) -> str | None:
 
 def _resolve_env(value: str) -> str:
     def repl(match: re.Match[str]) -> str:
-        key = match.group(1)
+        expr = match.group(1)
+        default: str | None = None
+        if ":-" in expr:
+            key, default = expr.split(":-", 1)
+            key = key.strip()
+            default = default.strip()
+        else:
+            key = expr.strip()
         env_val = os.environ.get(key)
         if env_val:
             return env_val
         settings_val = _settings_value_for_env_key(key)
         if settings_val:
             return settings_val
+        if default is not None:
+            return default
         return match.group(0)
 
     if not isinstance(value, str):

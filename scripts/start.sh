@@ -31,6 +31,22 @@ if [[ ! -x "$VENV/bin/uvicorn" ]]; then
   exit 1
 fi
 
+# MCP stdio agents (YL-Worker, SP analysts) spawn `npx`; background start must see Node on PATH.
+if [[ -z "${NPX_PATH:-}" ]]; then
+  if [[ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]]; then
+    # shellcheck source=/dev/null
+    source "${NVM_DIR:-$HOME/.nvm}/nvm.sh"
+  fi
+  if command -v npx >/dev/null 2>&1; then
+    NPX_PATH="$(command -v npx)"
+    export NPX_PATH
+    export PATH="$(dirname "$NPX_PATH"):${PATH}"
+  else
+    echo "WARNING: npx not found — MCP agents (YL-Worker-001, SP analysts) will fail at chat time." >&2
+    echo "  Install Node.js (https://nodejs.org) or ensure nvm is loaded before ./scripts/start.sh" >&2
+  fi
+fi
+
 cd "$ROOT"
 nohup "$VENV/bin/uvicorn" app.main:app \
   --host "$HOST" \

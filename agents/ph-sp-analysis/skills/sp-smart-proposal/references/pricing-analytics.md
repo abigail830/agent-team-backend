@@ -106,7 +106,7 @@ WHERE cs.is_template = 0
 LIMIT 2000;
 ```
 
-（若 `pricing_overrides` 为空对象，`JSON_KEYS` 行为需用 `describe_table` + 小样本验证后调整。）
+（若 `pricing_overrides` 为空对象，`JSON_KEYS` 行为需用 `information_schema.columns` + 小样本验证后调整。）
 
 ## 注意
 

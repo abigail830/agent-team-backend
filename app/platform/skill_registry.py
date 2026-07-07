@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import AgentSkill, Skill
 
-# backend/ — skill source_path is relative to this root (e.g. agents/odi-analysis/skills/...)
+# backend/ — skill source_path is relative to this root (e.g. agents/yl-worker1/skills/...)
 SKILLS_ROOT = Path(__file__).resolve().parents[2]
 
 

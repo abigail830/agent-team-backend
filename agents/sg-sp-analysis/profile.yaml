@@ -13,15 +13,17 @@ mcp_servers:
       MYSQL_HOST: ${SG_SP_MYSQL_HOST}
       MYSQL_PORT: ${SG_SP_MYSQL_PORT}
       MYSQL_USER: ${SG_SP_MYSQL_USER}
-      MYSQL_PASSWORD: ${SG_SP_MYSQL_PASSWORD}
-      MYSQL_DATABASE: ${SG_SP_MYSQL_DATABASE}
+      MYSQL_PASS: ${SG_SP_MYSQL_PASSWORD}
+      MYSQL_DB: ${SG_SP_MYSQL_DATABASE}
+      MYSQL_SSL: "true"
+      ALLOW_INSERT_OPERATION: "false"
+      ALLOW_UPDATE_OPERATION: "false"
+      ALLOW_DELETE_OPERATION: "false"
+      ALLOW_DDL_OPERATION: "false"
 allowed_tools:
   - list_sql_results
   - suggest_visualization
-  - mysql_list_databases
-  - mysql_list_tables
-  - mysql_describe_table
-  - mysql_execute_query
+  - mysql_query
 
 hooks:
   sql_validator:

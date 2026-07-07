@@ -1,11 +1,11 @@
 # MCP servers for this agent only. Reference by key in profile.yaml (mcp_servers.mysql).
 # Per-agent env (MYSQL_*, credentials) belongs in profile.yaml, not here.
 #
-# Package: mysql-mcp-server (read-only SELECT/SHOW/DESCRIBE/EXPLAIN)
-# Tools: list_databases, list_tables, describe_table, execute_query
+# Package: @benborla29/mcp-server-mysql (read-only by default, supports remote DB + SSL)
+# Tool: mysql_query
 servers:
   mysql:
-    command: npx
+    command: ${NPX_PATH:-npx}
     args:
       - -y
-      - mysql-mcp-server@latest
+      - "@benborla29/mcp-server-mysql"

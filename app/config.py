@@ -61,6 +61,7 @@ class Settings(BaseSettings):
 
     database_url: str = Field(validation_alias="DATABASE_URL")
     redis_url: str = Field(validation_alias="REDIS_URL")
+    yl_database_url: str | None = Field(default=None, validation_alias="YL_DATABASE_URL")
 
     # Fernet key for encrypting MCP credentials at rest in the database
     mcp_secrets_key: str | None = Field(default=None, validation_alias="MCP_SECRETS_KEY")

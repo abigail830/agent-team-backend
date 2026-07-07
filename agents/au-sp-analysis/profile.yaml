@@ -13,15 +13,17 @@ mcp_servers:
       MYSQL_HOST: ${AU_SP_MYSQL_HOST}
       MYSQL_PORT: ${AU_SP_MYSQL_PORT}
       MYSQL_USER: ${AU_SP_MYSQL_USER}
-      MYSQL_PASSWORD: ${AU_SP_MYSQL_PASSWORD}
-      MYSQL_DATABASE: ${AU_SP_MYSQL_DATABASE}
+      MYSQL_PASS: ${AU_SP_MYSQL_PASSWORD}
+      MYSQL_DB: ${AU_SP_MYSQL_DATABASE}
+      MYSQL_SSL: "true"
+      ALLOW_INSERT_OPERATION: "false"
+      ALLOW_UPDATE_OPERATION: "false"
+      ALLOW_DELETE_OPERATION: "false"
+      ALLOW_DDL_OPERATION: "false"
 allowed_tools:
   - list_sql_results
   - suggest_visualization
-  - mysql_list_databases
-  - mysql_list_tables
-  - mysql_describe_table
-  - mysql_execute_query
+  - mysql_query
 
 hooks:
   sql_validator:

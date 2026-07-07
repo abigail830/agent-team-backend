@@ -1,4 +1,4 @@
-"""Verify odi-analysis agent exposes postgres MCP tools on Agent.mcp_tools."""
+"""Verify yl-worker1 agent exposes postgres MCP tools on Agent.mcp_tools."""
 
 import asyncio
 import sys
@@ -21,17 +21,17 @@ async def main() -> int:
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     profiles = discover_agent_profiles()
-    odi = next((p for p in profiles if p.slug == "odi-analysis"), None)
-    if odi is None:
-        print("FAIL: odi-analysis profile not found")
+    profile = next((p for p in profiles if p.slug == "yl-worker1"), None)
+    if profile is None:
+        print("FAIL: yl-worker1 profile not found")
         return 1
 
-    print(f"Profile allowed_tools: {odi.extra_config.get('allowed_tools')}")
+    print(f"Profile allowed_tools: {profile.extra_config.get('allowed_tools')}")
 
     async with session_factory() as db:
-        row = (await db.execute(select(AgentModel).where(AgentModel.slug == "odi-analysis"))).scalar_one_or_none()
+        row = (await db.execute(select(AgentModel).where(AgentModel.slug == "yl-worker1"))).scalar_one_or_none()
         if row is None:
-            print("FAIL: odi-analysis agent row missing in DB — restart backend to sync")
+            print("FAIL: yl-worker1 agent row missing in DB — restart backend to sync")
             return 1
 
         bundle = await AgentFactory(db).build(row.id)

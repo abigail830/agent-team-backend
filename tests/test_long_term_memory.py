@@ -18,12 +18,12 @@ def test_format_for_injection_includes_policy_and_blocks():
     block = format_for_injection(
         "[!] 不要猜测\n- 回复用中文",
         "- 默认 30 天",
-        agent_slug="odi-analysis",
+        agent_slug="yl-worker1",
         max_tokens=1500,
     )
     assert "<memory_policy>" in block
     assert "<user_preferences>" in block
-    assert 'agent="odi-analysis"' in block
+    assert 'agent="yl-worker1"' in block
     assert "[!] 不要猜测" in block
 
 

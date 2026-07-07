@@ -8,6 +8,7 @@ from app.api.schemas import AgentOut
 from app.db.models import AgentModel
 from app.db.session import get_db
 from app.platform.current_user import get_current_user
+from app.platform.profile_loader import discover_agent_profiles
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
@@ -17,8 +18,11 @@ async def list_agents(
     db: AsyncSession = Depends(get_db),
     _user=Depends(get_current_user),
 ) -> list[AgentOut]:
+    active_slugs = {p.slug for p in discover_agent_profiles()}
     result = await db.execute(
-        select(AgentModel).where(AgentModel.slug.isnot(None)).order_by(AgentModel.name)
+        select(AgentModel)
+        .where(AgentModel.slug.isnot(None), AgentModel.slug.in_(active_slugs))
+        .order_by(AgentModel.name)
     )
     return [_to_out(a) for a in result.scalars().all()]
 

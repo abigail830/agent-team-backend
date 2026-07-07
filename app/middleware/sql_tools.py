@@ -27,15 +27,21 @@ def is_postgres_run_query(tool_name: str) -> bool:
 
 
 def is_mysql_run_query(tool_name: str) -> bool:
-    """Match mysql-mcp-server execute_query tools across naming conventions."""
+    """Match MySQL MCP query tools across naming conventions."""
     if tool_name in (
+        "mysql_query",
         "execute_query",
         "mysql_execute_query",
+        "mysql_mysql_query",
+        "mcp__mysql__mysql_query",
         "mcp__mysql__execute_query",
     ):
         return True
     return ("mysql" in tool_name) and (
-        tool_name.endswith("_execute_query") or tool_name.endswith("__execute_query")
+        tool_name.endswith("_mysql_query")
+        or tool_name.endswith("__mysql_query")
+        or tool_name.endswith("_execute_query")
+        or tool_name.endswith("__execute_query")
     )
 
 

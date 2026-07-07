@@ -9,13 +9,15 @@ def test_postgres_run_query_names():
 
 
 def test_mysql_run_query_names():
+    assert is_mysql_run_query("mysql_query")
     assert is_mysql_run_query("mysql_execute_query")
     assert is_mysql_run_query("execute_query")
+    assert is_mysql_run_query("mcp__mysql__mysql_query")
     assert is_mysql_run_query("mcp__mysql__execute_query")
     assert not is_mysql_run_query("postgres_query_data")
 
 
 def test_sql_run_query_union():
     assert is_sql_run_query("postgres_query_data")
-    assert is_sql_run_query("mysql_execute_query")
+    assert is_sql_run_query("mysql_query")
     assert not is_sql_run_query("mysql_list_tables")

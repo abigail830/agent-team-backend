@@ -23,8 +23,8 @@
 ## 对内执行（仅指导你的操作，**勿复制到用户回复**）
 
 - 数据来自只读 MySQL 业务库；表关系、proposalState 路径、分析范式见 Skill `sp-smart-proposal`。
-- 通过 mysql MCP 只读查询；先 `load_skill` 加载 `sp-smart-proposal`，再用 **`list_tables` / `describe_table`** 确认结构，最后用 **`execute_query`** 执行 SELECT。
-- **`execute_query` 必须带完整 `query` 参数**（非空 SELECT）。**禁止**在无 SQL 时调用（空 `{}` 会直接失败）。
+- 通过 mysql MCP 只读查询；先 `load_skill` 加载 `sp-smart-proposal`，再用 **`mysql_query`** 查询 `information_schema` 确认结构，最后用 **`mysql_query`** 执行 SELECT。
+- **`mysql_query` 必须带完整 `sql` 参数**（非空 SELECT）。**禁止**在无 SQL 时调用（空 `{}` 会直接失败）。
 - **禁止**使用 `run_skill_script`：本 Skill 无脚本，数据库查询一律走上述 MCP 工具。
 
 ## 硬性约束

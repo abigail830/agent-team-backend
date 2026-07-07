@@ -5,7 +5,7 @@
 - 部分 Proposal 先在 **HubSpot** 建 deal，再在工具中继续（`deal_info.deal_id` 非空）
 - 部分无 CRM，仅在 `deal_info` 记录本地 pipeline / 来源层级（`deal_source_layer_*`）
 
-关联：`deal_info.session_id = chat_sessions.id`（或 `proposal_id` 与业务主键，以 `describe_table` 为准）。
+关联：`deal_info.session_id = chat_sessions.id`（或 `proposal_id` 与业务主键，以 `information_schema.columns` 查询结果为准）。
 
 ## 有/无 CRM deal 占比
 
@@ -72,7 +72,7 @@ LIMIT 2000;
 
 `deal_info.line_items` 为 JSON 数组；结构与 HubSpot 同步字段相关。分析前：
 
-1. `describe_table` 确认列
+1. `mysql_query` 查询 `information_schema.columns` 确认列
 2. 小样本 `SELECT line_items FROM deal_info WHERE line_items IS NOT NULL LIMIT 5`
 3. 再用 `JSON_TABLE` 展开 `name` / `sku` / `price` 等键（键名以样本为准）
 

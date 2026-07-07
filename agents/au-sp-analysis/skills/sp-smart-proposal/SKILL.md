@@ -86,7 +86,7 @@ service_and_fee_au_incorp ── catalog（SKU / 标准定价，对照 state 与
 
 ### MySQL JSON 展开范式（SKU 列表）
 
-先 `describe_table` 确认列名，再复用 reference 中模板。典型：从最新态展开所有 SKU：
+先用 `mysql_query` 查询 `information_schema.columns` 确认列名，再复用 reference 中模板。典型：从最新态展开所有 SKU：
 
 ```sql
 SELECT
@@ -122,15 +122,15 @@ LIMIT 2000;
 
 SQL 成功后平台**只缓存**，不自动出图。总结或解读时若图表能显著帮助理解，再调用 `suggest_visualization`（`intent`：`auto` / `trend` / `matrix` / `ranking` / `detail` / `none`）。顺序跟随 ReAct 流（说明 → 查数 → 解读 → 按需出图），勿暴露 tool 名或 JSON。
 
-- 多步：说明 → `execute_query` → 文字解读 →（需要时）`suggest_visualization` → 下一查询 → 总结
+- 多步：说明 → `mysql_query` → 文字解读 →（需要时）`suggest_visualization` → 下一查询 → 总结
 - 同轮多查询：先 `list_sql_results`，用 `source_call_id` 指定要可视化的那次结果
 - 矩阵三列 + `matrix`；热力图橙色系；多系列用平台配色
 
 ## 执行顺序
 
 1. **确定回复语言**（与 system prompt 一致）
-2. **mysql MCP**：`list_tables` → `describe_table`（必要时 `list_databases`）→ **`execute_query`**
-3. **`execute_query` 必须带非空 `query`**；平台会注入/校验 `LIMIT`（`hooks.sql_validator`）
+2. **mysql MCP**：用 **`mysql_query`** 查询 `information_schema.tables` / `information_schema.columns` 确认结构，再执行业务 SELECT
+3. **`mysql_query` 必须带非空 `sql`**；平台会注入/校验 `LIMIT`（`hooks.sql_validator`）
 4. 按 §意图路由 用 `read_skill_resource` 加载对应 reference 中的 SQL 模板
 5. **禁止 `run_skill_script`**
 
@@ -189,8 +189,8 @@ SQL 成功后平台**只缓存**，不自动出图。总结或解读时若图表
 
 ## 易错写法
 
-- 空参数调用 `execute_query`
-- 未 `describe_table` 就猜列名（如 `user_email` vs `user_mail`）
+- 空参数调用 `mysql_query`
+- 未查询 `information_schema.columns` 就猜列名（如 `user_email` vs `user_mail`）
 - 用 `session_state_version` 做「当前服务清单」截面（应使用 `chat_states`）
 - 在正文向用户展示 `client_profile.contact_email` 等 PII
 

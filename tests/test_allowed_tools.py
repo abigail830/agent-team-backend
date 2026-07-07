@@ -65,26 +65,14 @@ def test_runtime_allowlist_mcp_double_underscore():
     assert "mcp__postgres__run_query" in names
 
 
-MYSQL_PROFILE = [
-    "mysql_list_databases",
-    "mysql_list_tables",
-    "mysql_describe_table",
-    "mysql_execute_query",
-]
+MYSQL_PROFILE = ["mysql_query"]
 
 
 def test_mcp_remote_tools_for_mysql():
-    assert mcp_remote_tools_for_server(MYSQL_PROFILE, "mysql") == [
-        "list_databases",
-        "list_tables",
-        "describe_table",
-        "execute_query",
-    ]
+    assert mcp_remote_tools_for_server(MYSQL_PROFILE, "mysql") == ["mysql_query"]
 
 
 def test_runtime_allowlist_mysql_aliases():
     names = runtime_function_allowlist(MYSQL_PROFILE)
-    assert "mysql_execute_query" in names
-    assert "execute_query" in names
-    assert "mysql_list_tables" in names
-    assert "list_tables" in names
+    assert "mysql_query" in names
+    assert "mysql_mysql_query" in names

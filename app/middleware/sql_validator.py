@@ -13,10 +13,10 @@ from app.middleware.sql_tools import is_sql_run_query
 
 def _extract_query(arguments: Any) -> str | None:
     if isinstance(arguments, dict):
-        value = arguments.get("query")
+        value = arguments.get("query", arguments.get("sql"))
         return str(value) if value is not None else None
     if isinstance(arguments, BaseModel):
-        value = getattr(arguments, "query", None)
+        value = getattr(arguments, "query", None) or getattr(arguments, "sql", None)
         return str(value) if value is not None else None
     return None
 
@@ -24,10 +24,12 @@ def _extract_query(arguments: Any) -> str | None:
 def _apply_query(arguments: Any, query: str) -> Any:
     if isinstance(arguments, dict):
         updated = dict(arguments)
-        updated["query"] = query
+        key = "sql" if "sql" in updated and "query" not in updated else "query"
+        updated[key] = query
         return updated
     if isinstance(arguments, BaseModel):
-        return arguments.model_copy(update={"query": query})
+        key = "sql" if hasattr(arguments, "sql") and not hasattr(arguments, "query") else "query"
+        return arguments.model_copy(update={key: query})
     return arguments
 
 

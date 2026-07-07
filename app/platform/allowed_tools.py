@@ -13,11 +13,12 @@ def _postgres_remote_alias(remote: str) -> str:
 
 
 def _mysql_remote_alias(remote: str) -> str:
-    """Map profile tool suffixes to mysql-mcp-server remote tool names."""
+    """Map profile tool suffixes to @benborla29/mcp-server-mysql remote tool names."""
     legacy = {
-        "query": "execute_query",
-        "query_data": "execute_query",
-        "run_query": "execute_query",
+        "execute_query": "mysql_query",
+        "query": "mysql_query",
+        "query_data": "mysql_query",
+        "run_query": "mysql_query",
     }
     return legacy.get(remote, remote)
 
@@ -87,6 +88,8 @@ def runtime_function_allowlist(profile_entries: list[str]) -> set[str] | None:
         if "_" in entry:
             server, _, remote = entry.partition("_")
             if remote:
-                names.add(_remote_alias(server, remote))
+                alias = _remote_alias(server, remote)
+                names.add(alias)
+                names.add(f"{server}_{alias}")
 
     return names or None

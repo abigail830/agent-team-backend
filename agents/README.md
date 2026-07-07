@@ -53,8 +53,8 @@ hooks:
 ### 完整示例
 
 ```yaml
-id: odi-analysis
-name: "ODI Knowledge AI Chat Analysis Agent"
+id: yl-worker1
+name: "YL-Worker-001"
 model_provider: azure_anthropic
 model: ${CLAUDE_AZURE_FOUNDRY_MODEL}
 
@@ -62,8 +62,14 @@ model: ${CLAUDE_AZURE_FOUNDRY_MODEL}
 mcp_servers:
   postgres:
     env:
-      DATABASE_URL: ${ODI_KNOWLEDGE_POSTGRES_URL}
+      DATABASE_URL: ${YL_DATABASE_URL}
       DB_READ_ONLY: "true"
+
+# mcp_servers.yaml 示例:
+# servers:
+#   postgres:
+#     command: ${NPX_PATH:-npx}
+#     args: [-y, mcp-postgres@latest]
 
 # 仍支持列表形式（env 留在 mcp_servers.yaml 或通过 mcp_env 覆盖）：
 # mcp_servers: [postgres]
@@ -74,12 +80,9 @@ allowed_tools:
   - postgres_get_schema
   - postgres_query_data
 
-# MySQL example (agents/sg-sp-analysis → mysql-mcp-server):
+# MySQL example (agents/sg-sp-analysis → @benborla29/mcp-server-mysql):
 # allowed_tools:
-#   - mysql_list_databases
-#   - mysql_list_tables
-#   - mysql_describe_table
-#   - mysql_execute_query
+#   - mysql_query
 
 hooks:
   sql_validator:
