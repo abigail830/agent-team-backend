@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Agent Platform backend on Microsoft Agent Framework"
 requires-python = ">=3.11"
 dependencies = [
-    "agent-framework",
+    # Pin minimal MAF packages — the meta `agent-framework` pulls `[all]` (~700MB+).
+    "agent-framework-core",
+    "agent-framework-anthropic",
+    "agent-framework-openai",
+    "mcp>=1.0.0",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "python-dotenv>=1.0.0",

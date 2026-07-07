@@ -1,6 +1,12 @@
 # agent-team-backend
 
-Agent Platform 后端：FastAPI + Microsoft Agent Framework。
+Agent Platform 后端（FastAPI + Microsoft Agent Framework）。
+
+## Vercel 部署
+
+- 依赖已精简：使用 `agent-framework-core` + anthropic/openai，**不要**安装 meta 包 `agent-framework`（会拉取 ~700MB 可选依赖，超过 Vercel 500MB 限制）。
+- `requirements.txt` 由 `uv export --no-dev --no-hashes --no-emit-project` 生成。
+- 在 Vercel 项目 Environment Variables 中配置 `DATABASE_URL`、模型密钥、`AUTH_*` 等（见 `.env.example`）。
 
 ## 本地开发
 
@@ -8,31 +14,11 @@ Agent Platform 后端：FastAPI + Microsoft Agent Framework。
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
-cp .env.example .env   # 填写 DATABASE_URL、模型密钥等
+cp .env.example .env
 alembic upgrade head
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-## 登录与用户
+## 注意
 
-平台使用邮箱 + 密码登录，会话为 HttpOnly Cookie + 服务端 session。
-
-```bash
-python scripts/set_user_password.py --email you@example.com --name "Your Name"
-```
-
-| 变量 | 说明 |
-|------|------|
-| `AUTH_DISABLED` | `true` 时免登录（仅开发） |
-| `AUTH_COOKIE_NAME` | Session cookie 名，默认 `ap_session` |
-| `AUTH_SESSION_TTL_HOURS` | 会话有效期（小时），默认 168 |
-| `AUTH_COOKIE_SECURE` | 生产 HTTPS 下设 `true` |
-
-完整环境变量见 `.env.example`。
-
-## 健康检查
-
-```bash
-curl http://127.0.0.1:8000/health
-curl http://127.0.0.1:8000/docs
-```
+FastAPI 含 SSE 长连接与 MCP 子进程，Vercel Serverless 可能仍有超时/冷启动限制。若聊天流式不稳定，建议改用 Railway / Render / Fly.io。
