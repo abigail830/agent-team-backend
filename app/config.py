@@ -89,7 +89,17 @@ class Settings(BaseSettings):
 
     app_name: str = "agent-platform"
     debug: bool = False
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
+    cors_origins: list[str] = Field(
+        default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"],
+        validation_alias="CORS_ORIGINS",
+    )
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [part.strip() for part in value.split(",") if part.strip()]
+        return value
 
     auth_disabled: bool = Field(default=False, validation_alias="AUTH_DISABLED")
     auth_cookie_name: str = Field(default="ap_session", validation_alias="AUTH_COOKIE_NAME")

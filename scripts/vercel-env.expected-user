@@ -1,0 +1,3 @@
+# Expected Vercel username for sync_vercel_env.py (NOT git email).
+# Run `vercel whoami` after `vercel login` to confirm, then fill in below:
+# abigail830
