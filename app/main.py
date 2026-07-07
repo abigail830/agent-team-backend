@@ -40,19 +40,34 @@ async def lifespan(app: FastAPI):
     try:
         factory = get_async_session_factory()
         disk_profiles = discover_agent_profiles()
-        logger.info("Syncing agent profiles from disk (%d profiles)...", len(disk_profiles))
+        should_sync = settings.sync_agent_profiles_on_startup and not IS_VERCEL
         async with factory() as session:
-            await ensure_dev_seed(session)
+            if should_sync:
+                logger.info("Syncing agent profiles from disk (%d profiles)...", len(disk_profiles))
+                await ensure_dev_seed(session)
+            else:
+                if IS_VERCEL:
+                    logger.info("Skipping agent profile sync on Vercel (read agents from database)")
+                else:
+                    logger.info(
+                        "Skipping agent profile sync (SYNC_AGENT_PROFILES_ON_STARTUP=false); "
+                        "run scripts/sync_agent_profiles.py after profile changes"
+                    )
+                from app.platform.platform_sync import ensure_platform_user
+
+                await ensure_platform_user(session)
+                await session.commit()
             synced = (
                 await session.execute(
                     select(func.count()).select_from(AgentModel).where(AgentModel.slug.isnot(None))
                 )
             ).scalar_one()
         logger.info(
-            "Agent profiles synced: %d on disk (%s) -> %d in database",
+            "Agent profiles: %d on disk (%s) -> %d in database%s",
             len(disk_profiles),
             ", ".join(p.slug for p in disk_profiles) or "none",
             synced,
+            " (synced)" if should_sync else "",
         )
         logger.info(
             "Models: primary=%s utility=%s",

@@ -109,13 +109,30 @@ def render_plantuml_tool(
         }
 
     ctx.last_source = result.normalized_source
-    spec = _build_diagram_artifact(
-        title=title.strip() or "PlantUML diagram",
-        svg=result.svg,
-        png=result.png,
-        source=result.normalized_source,
-        chat_id=ctx.chat_id,
-    )
+    try:
+        spec = _build_diagram_artifact(
+            title=title.strip() or "PlantUML diagram",
+            svg=result.svg,
+            png=result.png,
+            source=result.normalized_source,
+            chat_id=ctx.chat_id,
+        )
+    except OSError as exc:
+        return {
+            "status": "error",
+            "message": str(exc).strip() or "Failed to persist diagram artifact.",
+            "renderer": "storage",
+            "normalized_source": result.normalized_source,
+            "hint": "Artifact storage is unavailable. Check ARTIFACT_STORAGE and BLOB_READ_WRITE_TOKEN.",
+        }
+    except RuntimeError as exc:
+        return {
+            "status": "error",
+            "message": str(exc).strip() or "Failed to persist diagram artifact.",
+            "renderer": "storage",
+            "normalized_source": result.normalized_source,
+            "hint": "Artifact storage is unavailable. Check ARTIFACT_STORAGE and BLOB_READ_WRITE_TOKEN.",
+        }
     payload = _queue_artifact(spec)
     payload["download_url"] = spec.download_url
     payload["png_download_url"] = spec.png_download_url

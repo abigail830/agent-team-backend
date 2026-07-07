@@ -3,7 +3,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +27,7 @@ from app.services.chat_run import ChatRunService, list_chat_messages
 from app.services.stream_errors import user_facing_stream_error
 from app.services.proposal_preview_service import get_chat_proposal_draft, get_chat_proposal_preview, load_chat_proposal_draft
 from app.proposal.export_service import ProposalExportError, generate_proposal_docx
-from app.proposal.storage import artifact_download_filename, artifact_media_type, resolve_artifact_path
+from app.proposal.storage import load_artifact_payload
 
 router = APIRouter(prefix="/chats", tags=["chats"])
 
@@ -147,18 +147,18 @@ async def download_artifact(
     chat: Chat = Depends(get_owned_chat),
     format: str | None = None,
     db: AsyncSession = Depends(get_db),
-) -> FileResponse:
+) -> StreamingResponse:
     _ = db
     variant = format.strip().lower() if format else None
-    path = resolve_artifact_path(chat.id, artifact_id, variant=variant)
-    if path is None:
+    payload = load_artifact_payload(chat.id, artifact_id, variant=variant)
+    if payload is None:
         raise HTTPException(status_code=404, detail="Artifact not found")
-    filename = artifact_download_filename(chat.id, artifact_id, variant=variant)
-    return FileResponse(
-        path,
-        media_type=artifact_media_type(chat.id, artifact_id, variant=variant),
-        filename=filename,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    return StreamingResponse(
+        iter([payload.data]),
+        media_type=payload.media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{payload.filename}"',
+        },
     )
 
 

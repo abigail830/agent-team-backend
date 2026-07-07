@@ -89,6 +89,19 @@ class Settings(BaseSettings):
         validation_alias="PLANTUML_RENDER_TIMEOUT_SECONDS",
     )
 
+    # Artifact persistence — local disk or Vercel Blob (required on Vercel serverless)
+    artifact_storage: str = Field(default="auto", validation_alias="ARTIFACT_STORAGE")
+    blob_read_write_token: str | None = Field(
+        default=None, validation_alias="BLOB_READ_WRITE_TOKEN"
+    )
+    blob_access: str = Field(default="private", validation_alias="BLOB_ACCESS")
+
+    # Agent profile sync — off by default; run scripts/sync_agent_profiles.py after YAML changes
+    sync_agent_profiles_on_startup: bool = Field(
+        default=False,
+        validation_alias="SYNC_AGENT_PROFILES_ON_STARTUP",
+    )
+
     app_name: str = "agent-platform"
     debug: bool = False
     cors_origins: Annotated[list[str], NoDecode] = Field(
