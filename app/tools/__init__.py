@@ -21,6 +21,7 @@ from app.tools.proposal import (
     render_preview,
 )
 from app.tools.viz import list_sql_results, suggest_visualization
+from app.yl_worker2.tools import YL_WORKER2_TOOLS
 
 BUILTIN_TOOLS = {
     "platform_time": platform_time,
@@ -43,4 +44,5 @@ BUILTIN_TOOLS = {
     "render_preview": render_preview,
     "generate_document": generate_document,
     "generate_word_document": generate_word_document,
+    **YL_WORKER2_TOOLS,
 }

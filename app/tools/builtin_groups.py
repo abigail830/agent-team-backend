@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from app.tools import BUILTIN_TOOLS
+from app.yl_worker2.tools import YL_WORKER2_TOOL_NAMES
 
 PROPOSAL_TOOL_NAMES = frozenset(
     {
@@ -37,6 +38,15 @@ DIAGRAM_TOOL_NAMES = frozenset(
         "render_plantuml",
     }
 )
+
+# Re-export for agent_factory
+__all__ = [
+    "PROPOSAL_TOOL_NAMES",
+    "VIZ_TOOL_NAMES",
+    "DIAGRAM_TOOL_NAMES",
+    "YL_WORKER2_TOOL_NAMES",
+    "resolve_builtin_tools",
+]
 
 
 def resolve_builtin_tools(allowed_tools: list[str], group: frozenset[str]) -> list:

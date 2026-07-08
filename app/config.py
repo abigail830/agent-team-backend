@@ -11,12 +11,16 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[1]
 _ENV_FILE = _BACKEND_ROOT / ".env"
+_ENV_LOCAL_FILE = _BACKEND_ROOT / ".env.local"
 # Legacy fallback when .env still lives at repo root
 _LEGACY_ENV_FILE = _BACKEND_ROOT.parent / ".env"
 if not _ENV_FILE.exists() and _LEGACY_ENV_FILE.exists():
     _ENV_FILE = _LEGACY_ENV_FILE
 
 load_dotenv(_ENV_FILE)
+if _ENV_LOCAL_FILE.exists():
+    # Local overrides (gitignored); e.g. SYNC_AGENT_PROFILES_ON_STARTUP=true
+    load_dotenv(_ENV_LOCAL_FILE, override=True)
 
 
 def _strip_inline_comment(value: str) -> str:
