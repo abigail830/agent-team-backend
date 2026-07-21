@@ -80,18 +80,6 @@ allowed_tools:
   - postgres_get_schema
   - postgres_query_data
 
-# Smart Proposal example (agents/sg-sp-analysis → mcp-postgres):
-# mcp_servers:
-#   postgres:
-#     env:
-#       DATABASE_URL: ${SG_SP_DATABASE_URL}
-#       DB_READ_ONLY: "true"
-# allowed_tools:
-#   - postgres_list_tables
-#   - postgres_describe_table
-#   - postgres_get_schema
-#   - postgres_query_data
-
 hooks:
   sql_validator:
     max_rows: 2000
