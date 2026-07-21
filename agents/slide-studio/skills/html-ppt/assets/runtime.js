@@ -25,6 +25,48 @@
 
   function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
 
+  function slideClassName(el) {
+    if (!el || el.nodeType !== 1) return '';
+    var cls = el.className;
+    return typeof cls === 'string' ? cls : ((cls && cls.baseVal) || '');
+  }
+
+  /** Header/footer/logo stay direct slide children so absolute chrome anchors to the slide box. */
+  function isSlideChromeNode(el) {
+    var cls = slideClassName(el);
+    return /\b(deck-header|deck-footer|inspire-logo)\b/.test(cls)
+      && !/\bslide-scale-(?:viewport|root)\b/.test(cls);
+  }
+
+  function wrapSlideForScale(s) {
+    if (s.querySelector(':scope > .slide-scale-viewport')) return;
+
+    var root = s.querySelector(':scope > .slide-scale-root');
+    if (root) {
+      var viewport = document.createElement('div');
+      viewport.className = 'slide-scale-viewport';
+      s.insertBefore(viewport, root);
+      viewport.appendChild(root);
+      return;
+    }
+
+    var contentNodes = Array.from(s.childNodes).filter(function (n) {
+      return !(n.nodeType === 1 && isSlideChromeNode(n));
+    });
+    if (!contentNodes.length) return;
+
+    var viewport = document.createElement('div');
+    viewport.className = 'slide-scale-viewport';
+    root = document.createElement('div');
+    root.className = 'slide-scale-root';
+    contentNodes.forEach(function (n) { root.appendChild(n); });
+    viewport.appendChild(root);
+
+    var footer = s.querySelector(':scope > .deck-footer');
+    if (footer) s.insertBefore(viewport, footer);
+    else s.appendChild(viewport);
+  }
+
   /* ========== Parse URL for preview-only mode ==========
    * When loaded as iframe.src = "index.html?preview=3", runtime enters a
    * locked single-slide mode: only slide N is visible, no chrome, no keys,
@@ -46,6 +88,111 @@
     const previewOnlyIdx = getPreviewIdx();
     const isPreviewMode = previewOnlyIdx >= 0 && previewOnlyIdx < slides.length;
 
+    var inIframe = window.self !== window.top;
+    if (inIframe) {
+      document.documentElement.classList.add('in-iframe');
+      document.body.classList.add('in-iframe');
+    } else if (!document.body.classList.contains('deck-host')) {
+      document.body.classList.add('deck-host');
+    }
+
+    var DESIGN_W = 1920;
+    var DESIGN_H = 1080;
+
+    if (!inIframe) {
+      slides.forEach(wrapSlideForScale);
+    }
+
+    function clearInnerSlideScale() {
+      slides.forEach(function (s) {
+        var root = s.querySelector('.slide-scale-root');
+        if (root) {
+          root.style.transform = 'none';
+          root.style.width = '100%';
+        }
+      });
+    }
+
+    function ensureDeckStage() {
+      var stage = document.getElementById('deck-stage');
+      if (stage) return stage;
+      stage = document.createElement('div');
+      stage.id = 'deck-stage';
+      deck.parentNode.insertBefore(stage, deck);
+      stage.appendChild(deck);
+      return stage;
+    }
+
+    function fitDeckScale() {
+      clearInnerSlideScale();
+      var stage = ensureDeckStage();
+      deck.style.width = DESIGN_W + 'px';
+      deck.style.height = DESIGN_H + 'px';
+      deck.style.transform = 'none';
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var availW = document.documentElement.clientWidth;
+          var availH = document.documentElement.clientHeight;
+          if (!availW || !availH) return;
+          var scale = Math.min(availW / DESIGN_W, availH / DESIGN_H);
+          stage.style.width = Math.floor(DESIGN_W * scale) + 'px';
+          stage.style.height = Math.floor(DESIGN_H * scale) + 'px';
+          deck.style.transformOrigin = '0 0';
+          deck.style.transform = 'scale(' + scale + ')';
+        });
+      });
+    }
+
+    function fitSlideScale(slide) {
+      var viewport = slide && slide.querySelector(':scope > .slide-scale-viewport');
+      var root = viewport && viewport.querySelector(':scope > .slide-scale-root');
+      if (!root || !viewport) return;
+      root.style.transform = 'none';
+      root.style.width = '100%';
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var availW = viewport.clientWidth;
+          var availH = viewport.clientHeight;
+          if (!availW || !availH) return;
+          var needW = root.scrollWidth;
+          var needH = root.scrollHeight;
+          var scale = Math.min(1, availW / needW, availH / needH) * 0.98;
+          if (scale < 0.995) {
+            root.style.transform = 'scale(' + scale + ')';
+          } else {
+            root.style.transform = 'none';
+          }
+        });
+      });
+    }
+
+    function fitCurrentSlide() {
+      if (document.body.classList.contains('in-iframe')) {
+        fitDeckScale();
+        return;
+      }
+      var target = isPreviewMode ? slides[previewOnlyIdx] : slides[idx];
+      fitSlideScale(target);
+    }
+
+    function bindSlideFit() {
+      var refit = function () { fitCurrentSlide(); };
+      window.addEventListener('resize', refit);
+      if (typeof ResizeObserver !== 'undefined') {
+        try {
+          var ro = new ResizeObserver(refit);
+          ro.observe(deck);
+          slides.forEach(function (s) { ro.observe(s); });
+        } catch (e) { /* ignore */ }
+      }
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(refit).catch(function () {});
+      }
+      window.addEventListener('message', function (e) {
+        if (e.data && e.data.type === 'deck-resize') refit();
+      });
+    }
+
     /* ===== Preview-only mode: show one slide, hide everything else ===== */
     if (isPreviewMode) {
       function showSlide(i) {
@@ -61,6 +208,7 @@
         });
       }
       showSlide(previewOnlyIdx);
+      fitCurrentSlide();
       /* Hide chrome that the presenter shouldn't see in preview */
       const hideSel = '.progress-bar, .notes-overlay, .overview, .notes, aside.notes, .speaker-notes';
       document.querySelectorAll(hideSel).forEach(el => { el.style.display = 'none'; });
@@ -87,7 +235,10 @@
         if (!e.data) return;
         if (e.data.type === 'preview-goto') {
           const n = parseInt(e.data.idx, 10);
-          if (n >= 0 && n < slides.length) showSlide(n);
+          if (n >= 0 && n < slides.length) {
+            showSlide(n);
+            fitCurrentSlide();
+          }
         } else if (e.data.type === 'preview-theme' && e.data.name) {
           let link = document.getElementById('theme-link');
           if (!link) {
@@ -102,6 +253,7 @@
       });
       /* Signal to parent that preview iframe is ready */
       try { window.parent && window.parent.postMessage({ type: 'preview-ready' }, '*'); } catch(e) {}
+      bindSlideFit();
       return;
     }
 
@@ -233,11 +385,21 @@
       const note = slides[n].querySelector('.notes, aside.notes, .speaker-notes');
       notes.innerHTML = note ? note.innerHTML : '';
 
-      // hash
-      const hashTarget = '#/'+(n+1);
-      if (location.hash !== hashTarget && !isPresenterWindow) {
-        history.replaceState(null,'', hashTarget);
+      // hash (use pathname so nested preview routes + <base> stay stable)
+      const hashFragment = '#/' + (n + 1);
+      const hashTarget = location.pathname + location.search + hashFragment;
+      if (location.hash !== hashFragment && !isPresenterWindow) {
+        history.replaceState(null, '', hashTarget);
       }
+
+      // re-trigger stagger-list children (animations do not run while slide was hidden)
+      slides[n].querySelectorAll('.anim-stagger-list').forEach(function (list) {
+        list.querySelectorAll(':scope > *').forEach(function (el) {
+          el.style.animation = 'none';
+          void el.offsetWidth;
+          el.style.animation = '';
+        });
+      });
 
       // re-trigger entry animations
       slides[n].querySelectorAll('[data-anim]').forEach(el => {
@@ -266,6 +428,8 @@
       if (!fromRemote && bc) {
         bc.postMessage({ type: 'go', idx: n });
       }
+
+      fitCurrentSlide();
     }
 
     /* ===== listen for remote navigation / theme changes ===== */
@@ -955,6 +1119,7 @@
     }
     window.addEventListener('hashchange', fromHash);
     fromHash();
+    bindSlideFit();
     go(idx);
   });
 })();

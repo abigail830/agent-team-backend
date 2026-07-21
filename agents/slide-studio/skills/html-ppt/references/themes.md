@@ -66,6 +66,7 @@ All themes define the same variables: `--bg`, `--bg-soft`, `--surface`,
 | name | description | when to use |
 |---|---|---|
 | `corporate-clean` | 纯白 + 海军蓝 accent + Inter + 保守边框。 | 董事会汇报、B2B 销售、金融保险 |
+| `inspire-brand` | Inspire 星空蓝 `#10213E` + 创想蓝 `#5DB2E2` + 章节渐变；见 `references/inspire-brand.md`。 | **仅当用户明确要求 Inspire 公司模板时** — 企业培训、内部分享、技术商务 |
 | `pitch-deck-vc` | YC 风白底 + 蓝紫渐变 accent + 大留白。 | 融资路演、种子轮、VC meeting |
 | `academic-paper` | 论文白 + 衬线正文 + 黑墨 + 蓝链接。 | 学术报告、研究分享、会议论文 |
 | `japanese-minimal` | 象牙白 + 朱红 accent + 极大留白 + Noto Serif。 | 品牌升级、匠人故事、禅意叙事 |

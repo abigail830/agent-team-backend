@@ -19,8 +19,8 @@ One command, no build. Pure static HTML/CSS/JS with only CDN webfonts.
 
 ## What the skill gives you
 
-- **36 themes** (`assets/themes/*.css`) — minimal-white, editorial-serif, soft-pastel, sharp-mono, arctic-cool, sunset-warm, catppuccin-latte/mocha, dracula, tokyo-night, nord, solarized-light, gruvbox-dark, rose-pine, neo-brutalism, glassmorphism, bauhaus, swiss-grid, terminal-green, xiaohongshu-white, rainbow-gradient, aurora, blueprint, memphis-pop, cyberpunk-neon, y2k-chrome, retro-tv, japanese-minimal, vaporwave, midcentury, corporate-clean, academic-paper, news-broadcast, pitch-deck-vc, magazine-bold, engineering-whiteprint
-- **15 full-deck templates** (`templates/full-decks/<name>/`) — complete multi-slide decks with scoped `.tpl-<name>` CSS. 8 extracted from real-world decks (xhs-white-editorial, graphify-dark-graph, knowledge-arch-blueprint, hermes-cyber-terminal, obsidian-claude-gradient, testing-safety-alert, xhs-pastel-card, dir-key-nav-minimal), 7 scenario scaffolds (pitch-deck, product-launch, tech-sharing, weekly-report, xhs-post 3:4, course-module, **presenter-mode-reveal** — 演讲者模式专用)
+- **37 themes** (`assets/themes/*.css`) — includes **`inspire-brand`** (Inspire 企业品牌) plus minimal-white, editorial-serif, soft-pastel, sharp-mono, arctic-cool, sunset-warm, catppuccin-latte/mocha, dracula, tokyo-night, nord, solarized-light, gruvbox-dark, rose-pine, neo-brutalism, glassmorphism, bauhaus, swiss-grid, terminal-green, xiaohongshu-white, rainbow-gradient, aurora, blueprint, memphis-pop, cyberpunk-neon, y2k-chrome, retro-tv, japanese-minimal, vaporwave, midcentury, corporate-clean, academic-paper, news-broadcast, pitch-deck-vc, magazine-bold, engineering-whiteprint
+- **16 full-deck templates** (`templates/full-decks/<name>/`) — includes **`inspire-brand`** (Inspire 公司模板) plus 8 extracted real-world decks and 7 scenario scaffolds (pitch-deck, product-launch, tech-sharing, weekly-report, xhs-post 3:4, course-module, **presenter-mode-reveal** — 演讲者模式专用)
 - **31 layouts** (`templates/single-page/*.html`) with realistic demo data
 - **27 CSS animations** (`assets/animations/animations.css`) via `data-anim`
 - **20 canvas FX animations** (`assets/animations/fx/*.js`) via `data-fx` — particle-burst, confetti-cannon, firework, starfield, matrix-rain, knowledge-graph (force-directed), neural-net (pulses), constellation, orbit-ring, galaxy-swirl, word-cascade, letter-explode, chain-react, magnetic-field, data-stream, gradient-blob, sparkle-trail, shockwave, typewriter-multi, counter-explosion
@@ -33,6 +33,12 @@ One command, no build. Pure static HTML/CSS/JS with only CDN webfonts.
 
 Use when the user asks for any kind of slide-based output or wants to turn
 text/notes into a presentable deck. Prefer this over building from scratch.
+
+**Default persona (Slide Studio):** executive / consulting / solution-report decks —
+16:9 horizontal slides, conclusion-first titles, no presenter meta on visible slides.
+For roadmaps and work plans, copy `templates/single-page/roadmap.html` or `timeline.html`.
+For investor / steering-committee decks, start from `templates/full-decks/pitch-deck/`.
+Do **not** default to `inspire-brand` unless the user explicitly asks.
 
 ### 🎤 Presenter Mode (演讲者模式 + 逐字稿)
 
@@ -68,8 +74,9 @@ tasteful default and confirm.
 
 1. **Content & audience.** What's the deck about, how many slides, who's
    watching (engineers / execs / 小红书读者 / 学生 / VC)?
-2. **Style / theme.** Which of the 36 themes fits? If unsure, recommend 2-3
-   candidates based on tone:
+2. **Style / theme.** Which theme fits? If unsure, recommend 2-3 candidates:
+   - **Default for business / planning / internal reports** → `corporate-clean`, `minimal-white`, or `tech-sharing` full-deck — **do NOT default to Inspire**
+   - **Inspire 公司 / 企业培训 / 星空蓝** — **ONLY when the user explicitly asks** → **`inspire-brand`** theme + **`inspire-brand`** full-deck; set `<body class="tpl-inspire-brand">`; read **`references/inspire-brand.md`** — see [references/inspire-brand.md](references/inspire-brand.md)
    - Business / investor pitch → `pitch-deck-vc`, `corporate-clean`, `swiss-grid`
    - Tech sharing / engineering → `tokyo-night`, `dracula`, `catppuccin-mocha`,
      `terminal-green`, `blueprint`
@@ -78,10 +85,11 @@ tasteful default and confirm.
    - Academic / report → `academic-paper`, `editorial-serif`, `minimal-white`
    - Edgy / cyber / launch → `cyberpunk-neon`, `vaporwave`, `y2k-chrome`,
      `neo-brutalism`
-3. **Starting point.** One of the 14 full-deck templates, or scratch? Point
+3. **Starting point.** One of the 16 full-deck templates, or scratch? Point
    to the closest `templates/full-decks/<name>/` and ask if it fits. If the
    user's content suggests something obvious (e.g. "我要做产品发布会" →
-   `product-launch`), propose it confidently instead of asking blindly.
+   `product-launch`; **"用 Inspire 模板"** → `inspire-brand`), propose it
+   confidently instead of asking blindly.
 
 A good opening message looks like:
 
@@ -91,6 +99,26 @@ A good opening message looks like:
 > 3. 要不要用我现成的 `tech-sharing` 全 deck 模板打底？
 
 Only after those are clear, scaffold the deck and start writing.
+
+### 🏢 Inspire 品牌模板（公司标准 — **仅用户明确要求时使用**）
+
+When the user **explicitly** asks for **Inspire 主题 / Inspire 模板 / 公司 PPT / 星空蓝 / 创想蓝**:
+
+1. `read_skill_resource` → **`references/inspire-brand.md`** (colors, typography ranges, page types, Do/Don't).
+2. Start from **`templates/full-decks/inspire-brand/`** — copy **entire** `index.html` + scoped `style.css` structure (`.tpl-inspire-brand` + `.inspire-*` classes). Do **not** link `inspire-brand.css` alone and invent custom absolute-position layouts.
+3. Set `<body class="tpl-inspire-brand">` (or `<html data-inspire-brand="true">`) so the renderer knows Inspire branding is intentional.
+4. Reference images via **`../../assets/inspire/logo-white.png`**, `logo.png`, `background.jpg` (paths rewrite to `./assets/inspire/...` on render).
+5. PPTX files in `assets/inspire/*.pptx` are **layout references only** — recreate in HTML, do not embed.
+
+**If the user did NOT ask for Inspire:** use `corporate-clean`, `minimal-white`, or another neutral theme + `templates/single-page/` layouts. Never add Inspire logos, `inspire-brand.css`, or `.inspire-*` layout classes.
+
+**Mandatory on every Inspire slide (visible to audience):**
+- Logo: `<img class="inspire-logo" src="../../assets/inspire/logo-white.png">` (dark/gradient pages) or `logo.png` (white content pages)
+- Copyright footer: `<span class="inspire-copyright">© Inspire Group</span>` inside `.deck-footer`
+
+**Never** put theme instructions or presenter hints on the slide (`Inspire Theme`, `基于 inspire-brand 主题`, `本页沟通重点`, `沟通重点`, `演讲提示`) — use `<div class="notes">` only.
+
+Full guide: [references/inspire-brand.md](references/inspire-brand.md).
 
 ## Quick start
 
@@ -125,7 +153,8 @@ Only after those are clear, scaffold the deck and start writing.
 ## Authoring rules (important)
 
 - **Always start from a template.** Don't author slides from scratch — copy the
-  closest layout from `templates/single-page/` first, then replace content.
+  closest layout from `templates/single-page/` or a full-deck folder first, then replace content.
+  **Never** build slide layouts with ad-hoc `position:absolute` grids or floating sidebars.
 - **Use tokens, not literal colors.** Every color, radius, shadow should come
   from CSS variables defined in `assets/base.css` and overridden by a theme.
   Good: `color: var(--text-1)`. Bad: `color: #111`.
@@ -140,9 +169,9 @@ Only after those are clear, scaffold the deck and start writing.
 - **Supply notes.** Wrap speaker notes in `<div class="notes">…</div>` inside
   each slide. Press S to open the overlay.
 - **NEVER put presenter-only text on the slide itself.** Descriptive text like
-  "这一页展示了……" or "Speaker: 这里可以补充……" or small explanatory captions
-  aimed at the presenter MUST go inside `<div class="notes">`, NOT as visible
-  `<p>` / `<span>` elements on the slide. The `.notes` class is `display:none`
+  "这一页展示了……" or "Speaker: 这里可以补充……" or **"本页沟通重点" / "沟通重点" / "演讲提示"**
+  sidebars aimed at the presenter MUST go inside `<div class="notes">`, NOT as visible
+  `<p>` / `<span>` / `<aside>` elements on the slide. The `.notes` class is `display:none`
   by default — it only appears in the S overlay. Slides should contain ONLY
   audience-facing content (titles, bullet points, data, charts, images).
 
@@ -155,10 +184,11 @@ Chinese + English deck, and how to export.
 
 ## Catalogs (load when needed)
 
-- [references/themes.md](references/themes.md) — all 36 themes with when-to-use.
+- [references/themes.md](references/themes.md) — all 37 themes with when-to-use.
+- [references/inspire-brand.md](references/inspire-brand.md) — **Inspire 公司品牌** assets, tokens, page types, HTML snippets.
 - [references/layouts.md](references/layouts.md) — all 31 layout types.
 - [references/animations.md](references/animations.md) — 27 CSS + 20 canvas FX animations.
-- [references/full-decks.md](references/full-decks.md) — all 15 full-deck templates.
+- [references/full-decks.md](references/full-decks.md) — all 16 full-deck templates.
 - [references/presenter-mode.md](references/presenter-mode.md) — **演讲者模式 + 逐字稿编写指南（技术分享/演讲必看）**.
 - [references/authoring-guide.md](references/authoring-guide.md) — full workflow.
 
@@ -172,7 +202,8 @@ html-ppt/
 │   ├── base.css             (tokens + primitives — do not edit per deck)
 │   ├── fonts.css            (webfont imports)
 │   ├── runtime.js           (keyboard + presenter + overview + theme cycle)
-│   ├── themes/*.css         (36 token overrides, one per theme)
+│   ├── inspire/             (Inspire brand: logos, backgrounds, pptx refs)
+│   ├── themes/*.css         (37 token overrides, incl. inspire-brand)
 │   └── animations/
 │       ├── animations.css   (27 named CSS entry animations)
 │       ├── fx-runtime.js    (auto-init [data-fx] on slide enter)
@@ -183,7 +214,7 @@ html-ppt/
 │   ├── layout-showcase.html       (iframe tour of all 31 layouts)
 │   ├── animation-showcase.html    (20 FX + 27 CSS animation slides)
 │   ├── full-decks-index.html      (gallery of all 14 full-deck templates)
-│   ├── full-decks/<name>/         (14 scoped multi-slide deck templates)
+│   ├── full-decks/<name>/         (16 scoped multi-slide deck templates)
 │   └── single-page/*.html         (31 layout files with demo data)
 ├── scripts/
 │   ├── new-deck.sh                (scaffold a deck from deck.html)

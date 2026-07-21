@@ -69,6 +69,7 @@ class AgentFactory:
             session_store=store,
             memory_config=memory_config,
             pending_turn_start_sequence=turn_start_sequence,
+            model_provider=provider.value,
         )
         _, compaction_provider = build_platform_compaction(memory_config)
         context_providers: list = [history]
