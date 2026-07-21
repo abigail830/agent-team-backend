@@ -88,5 +88,9 @@ def test_anthropic_drops_openai_call_history() -> None:
 def test_neutral_call_ids_kept_for_both_providers() -> None:
     rows = [_tool_call_row("call-1", seq=1), _tool_result_row("call-1", seq=2)]
 
-    for provider in (ModelProvider.AZURE_OPENAI.value, ModelProvider.AZURE_ANTHROPIC.value):
+    for provider in (
+        ModelProvider.AZURE_OPENAI.value,
+        ModelProvider.AZURE_ANTHROPIC.value,
+        ModelProvider.SILICONFLOW.value,
+    ):
         assert len(sanitize_rows_for_provider(rows, provider=provider)) == 2

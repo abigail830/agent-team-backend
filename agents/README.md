@@ -22,7 +22,7 @@ agents/
 |-------|----------|-------------|
 | `id` | yes | Slug，与目录名一致 |
 | `name` | yes | 显示名 |
-| `model_provider` | yes | `azure_openai` / `azure_anthropic` |
+| `model_provider` | yes | `azure_openai` / `azure_anthropic` / `siliconflow` |
 | `model` | yes | Deployment；支持 `${ENV_VAR}` |
 | `mcp_servers` | no | 引用 `mcp_servers.yaml` 中的 key；可在 profile 内联 `env`（见下） |
 | `allowed_tools` | no | MAF 工具名，如 `postgres_query_data`（对应 mcp-postgres 的 `query_data`） |
@@ -86,6 +86,25 @@ hooks:
   result_truncator:
     max_observation_bytes: 50000
 ```
+
+### SiliconFlow（硅基流动）
+
+OpenAI **Chat Completions** 兼容接口（不是 Azure Responses API）：
+
+```yaml
+model_provider: siliconflow
+model: zai-org/GLM-5.2   # 从 https://cloud.siliconflow.cn/me/models 复制完整 id
+```
+
+后端 / Vercel 环境变量：
+
+```bash
+SILICONFLOW_API_KEY=sk-...
+SILICONFLOW_BASE_URL=https://api.siliconflow.cn/v1
+# SILICONFLOW_DEFAULT_MODEL=zai-org/GLM-5.2   # profile 未写 model 时的默认值
+```
+
+附件：仅支持**图片** inline；PDF 等文件暂不支持。
 
 ### mcp_servers.yaml vs profile
 

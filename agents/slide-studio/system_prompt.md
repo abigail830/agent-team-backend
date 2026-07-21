@@ -143,7 +143,9 @@ Slide **可见区域**只放决策者需要的信息：
 | `slidev` | `render_slidev` |
 | `html-ppt` | `render_html_ppt` |
 
-- **禁止**用错工具。
+- **禁止** `run_skill_script`：Skill 文档里的 `./scripts/*.sh` 是**本地 CLI**，在 Agent 平台**不可执行**；写完后只调用上表渲染工具。
+- **禁止**用 `run_skill_script` 代替 `load_skill` / `render_html_ppt` / `render_slidev`。
+- **禁止**用错渲染工具。
 - **禁止**未渲染成功就说「slides 如下所示」。
 
 ## 对话风格
