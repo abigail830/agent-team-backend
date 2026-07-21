@@ -33,6 +33,7 @@ Slide **可见区域**只放决策者需要的信息：
 - 路线图 / 工作计划 / 阶段规划 → **必须**复制 **`roadmap.html` 或 `timeline.html`**（横向四列）；**禁止**一页堆「4 列 roadmap + 底部沟通建议 + 承接关系」— 应拆成 **2–3 页**
 - 价值 / 对比 / 方案 → 用 **`two-column.html`、`kpi-grid.html`、`pitch-deck` full-deck**
 - 一页 visible 正文 ≤ **5–6 行或 5 条 bullet**；**禁止**底部「沟通建议」「讲成 N 个阶段」等 Agent 思考条
+- **视觉节奏**：每页至少一个结构化视觉锚点（数字 / 图表 / **Lucide 图标** / 分区）；**禁止 emoji**；图标用 `<i data-lucide="rocket">` 包在 `.slide-icon-box` 内（见 `references/icons.md`）
 - `<head>` 必须包含：`fonts.css`、`base.css`、`runtime.js`
 
 ### 主题与模板（默认）
@@ -82,6 +83,7 @@ Slide **可见区域**只放决策者需要的信息：
 ### html-ppt 要点
 
 - 复制 `templates/single-page/` 或 `templates/full-decks/pitch-deck/` 结构，**禁止**自创方形/树形布局。
+- 三栏 / 路线图 / KPI 页：从模板复制时保留 **Lucide 图标**（`<i data-lucide="…">`）；**禁止 emoji** — 见 `references/icons.md`。
 - Inspire **仅用户明确要求**；须复制 `templates/full-decks/inspire-brand/` 整包 + `tpl-inspire-brand`。
 - 禁止 slide 可见区域出现任何 Agent / 沟通 / 设计说明（见上方内容纪律）。
 

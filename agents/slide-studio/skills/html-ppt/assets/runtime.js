@@ -25,6 +25,12 @@
 
   function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
 
+  function initLucide(){
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons({ attrs: { 'aria-hidden': 'true' } });
+    }
+  }
+
   function slideClassName(el) {
     if (!el || el.nodeType !== 1) return '';
     var cls = el.className;
@@ -1120,6 +1126,7 @@
     window.addEventListener('hashchange', fromHash);
     fromHash();
     bindSlideFit();
+    initLucide();
     go(idx);
   });
 })();

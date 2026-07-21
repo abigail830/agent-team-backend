@@ -19,12 +19,13 @@ One command, no build. Pure static HTML/CSS/JS with only CDN webfonts.
 
 ## What the skill gives you
 
-- **37 themes** (`assets/themes/*.css`) — includes **`inspire-brand`** (Inspire 企业品牌) plus minimal-white, editorial-serif, soft-pastel, sharp-mono, arctic-cool, sunset-warm, catppuccin-latte/mocha, dracula, tokyo-night, nord, solarized-light, gruvbox-dark, rose-pine, neo-brutalism, glassmorphism, bauhaus, swiss-grid, terminal-green, xiaohongshu-white, rainbow-gradient, aurora, blueprint, memphis-pop, cyberpunk-neon, y2k-chrome, retro-tv, japanese-minimal, vaporwave, midcentury, corporate-clean, academic-paper, news-broadcast, pitch-deck-vc, magazine-bold, engineering-whiteprint
+- **38 themes** (`assets/themes/*.css`) — includes **`inspire-brand`** (Inspire 企业品牌) and **`asc-brand`** (Ascentium 午夜绿 + 活力橙) plus minimal-white, editorial-serif, soft-pastel, sharp-mono, arctic-cool, sunset-warm, catppuccin-latte/mocha, dracula, tokyo-night, nord, solarized-light, gruvbox-dark, rose-pine, neo-brutalism, glassmorphism, bauhaus, swiss-grid, terminal-green, xiaohongshu-white, rainbow-gradient, aurora, blueprint, memphis-pop, cyberpunk-neon, y2k-chrome, retro-tv, japanese-minimal, vaporwave, midcentury, corporate-clean, academic-paper, news-broadcast, pitch-deck-vc, magazine-bold, engineering-whiteprint
 - **16 full-deck templates** (`templates/full-decks/<name>/`) — includes **`inspire-brand`** (Inspire 公司模板) plus 8 extracted real-world decks and 7 scenario scaffolds (pitch-deck, product-launch, tech-sharing, weekly-report, xhs-post 3:4, course-module, **presenter-mode-reveal** — 演讲者模式专用)
 - **31 layouts** (`templates/single-page/*.html`) with realistic demo data
 - **27 CSS animations** (`assets/animations/animations.css`) via `data-anim`
 - **20 canvas FX animations** (`assets/animations/fx/*.js`) via `data-fx` — particle-burst, confetti-cannon, firework, starfield, matrix-rain, knowledge-graph (force-directed), neural-net (pulses), constellation, orbit-ring, galaxy-swirl, word-cascade, letter-explode, chain-react, magnetic-field, data-stream, gradient-blob, sparkle-trail, shockwave, typewriter-multi, counter-explosion
 - **Keyboard runtime** (`assets/runtime.js`) — arrows, T (theme), A (anim), F/O, **S (presenter mode: magnetic-card popup with CURRENT / NEXT / SCRIPT / TIMER cards)**, N (notes drawer), R (reset timer in presenter)
+- **Lucide icons (CDN)** — `<i data-lucide="rocket">` in `.slide-icon-box`; auto-injected + `runtime.js` init; **no emoji** — see [references/icons.md](references/icons.md)
 - **FX runtime** (`assets/animations/fx-runtime.js`) — auto-inits `[data-fx]` on slide enter, cleans up on leave
 - **Showcase decks** for themes / layouts / animations / full-decks gallery
 - **Headless Chrome render script** for PNG export
@@ -162,6 +163,10 @@ Full guide: [references/inspire-brand.md](references/inspire-brand.md).
   a new `templates/single-page/*.html` if none of the 30 fit.
 - **Respect chrome slots.** `.deck-header`, `.deck-footer`, `.slide-number`
   and the progress bar are provided by `assets/base.css` + `runtime.js`.
+- **Use SVG icons, not emoji.** On pillars, KPIs, roadmaps, and key bullets,
+  add `<span class="slide-icon-box"><i data-lucide="rocket"></i></span>`
+  (catalog in [references/icons.md](references/icons.md)). Emoji are blocked
+  for executive decks and trigger normalize warnings.
 - **Keyboard-first.** Always include `<script src="../assets/runtime.js"></script>`
   so the deck supports ← → / T / A / F / S / O / hash deep-links.
 - **One `.slide` per logical page.** `runtime.js` makes `.slide.is-active`
@@ -184,7 +189,8 @@ Chinese + English deck, and how to export.
 
 ## Catalogs (load when needed)
 
-- [references/themes.md](references/themes.md) — all 37 themes with when-to-use.
+- [references/icons.md](references/icons.md) — **Lucide CDN icons** (`data-lucide`; no emoji).
+- [references/themes.md](references/themes.md) — all 38 themes with when-to-use.
 - [references/inspire-brand.md](references/inspire-brand.md) — **Inspire 公司品牌** assets, tokens, page types, HTML snippets.
 - [references/layouts.md](references/layouts.md) — all 31 layout types.
 - [references/animations.md](references/animations.md) — 27 CSS + 20 canvas FX animations.
@@ -201,9 +207,10 @@ html-ppt/
 ├── assets/
 │   ├── base.css             (tokens + primitives — do not edit per deck)
 │   ├── fonts.css            (webfont imports)
-│   ├── runtime.js           (keyboard + presenter + overview + theme cycle)
+│   ├── runtime.js           (keyboard + presenter + Lucide icon init)
 │   ├── inspire/             (Inspire brand: logos, backgrounds, pptx refs)
-│   ├── themes/*.css         (37 token overrides, incl. inspire-brand)
+│   ├── themes/*.css         (38 token overrides, incl. inspire-brand + asc-brand)
+│   ├── asc-deck-scoped.css  (Ascentium slide variants — link with tpl-asc-brand)
 │   └── animations/
 │       ├── animations.css   (27 named CSS entry animations)
 │       ├── fx-runtime.js    (auto-init [data-fx] on slide enter)

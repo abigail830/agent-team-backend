@@ -219,6 +219,20 @@ body.deck-host.in-iframe .slide-main{padding-bottom:72px}
  * The audience window (this file) is NOT affected — it stays as normal deck view.
  * Only the .notes class below is needed to hide speaker notes from audience. */
 
+/* ================= ICONS (Lucide CDN — <i data-lucide="name">) ================= */
+.slide-icon-box{
+  width:40px;height:40px;border-radius:var(--radius-sm);
+  background:color-mix(in srgb,var(--accent) 10%,var(--surface-2));
+  color:var(--accent);
+  display:inline-flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-bottom:10px;
+}
+.slide-icon-box svg{width:22px;height:22px;display:block;stroke:currentColor}
+.slide-icon-box.sm{width:32px;height:32px;margin-bottom:8px}
+.slide-icon-box.sm svg{width:18px;height:18px}
+.slide-icon-inline{display:inline-flex;align-items:center;gap:10px}
+.slide-icon-inline .slide-icon-box{margin-bottom:0;vertical-align:middle}
+
 /* ================= UTILITY ================= */
 .hidden{display:none!important}
 .nowrap{white-space:nowrap}

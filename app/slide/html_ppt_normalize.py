@@ -9,6 +9,11 @@ _INSPIRE_OPT_IN_RE = re.compile(
     re.IGNORECASE,
 )
 
+_ASC_OPT_IN_RE = re.compile(
+    r"""(?:class=["'][^"']*\btpl-asc-brand\b|data-asc-brand\s*=\s*["']true["'])""",
+    re.IGNORECASE,
+)
+
 # Agent meta / prompt text that must not appear on slides (→ removed).
 _META_TEXT_RES = (
     re.compile(
@@ -97,6 +102,10 @@ _COPYRIGHT = "© Inspire Group"
 _CORE_HEAD_LINKS = (
     ('href="../../assets/fonts.css"', '<link rel="stylesheet" href="../../assets/fonts.css">'),
     ('href="../../assets/base.css"', '<link rel="stylesheet" href="../../assets/base.css">'),
+    (
+        "unpkg.com/lucide",
+        '<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>',
+    ),
     ('src="../../assets/runtime.js"', '<script src="../../assets/runtime.js"></script>'),
 )
 
@@ -128,6 +137,15 @@ def has_inspire_scoped_css_link(html: str) -> bool:
             re.IGNORECASE,
         )
     )
+
+
+def is_asc_branding_enabled(html: str) -> bool:
+    """True only when the deck explicitly opts into Ascentium branding."""
+    return bool(_ASC_OPT_IN_RE.search(html or ""))
+
+
+def has_asc_scoped_css_link(html: str) -> bool:
+    return "asc-deck-scoped.css" in (html or "")
 
 
 _INSPIRE_STAGE_PAGE_RE = re.compile(
@@ -281,13 +299,25 @@ def _inject_iframe_boot_script(html: str) -> str:
 
 
 def _ensure_default_theme(html: str) -> str:
-    if is_inspire_branding_enabled(html):
+    if is_inspire_branding_enabled(html) or is_asc_branding_enabled(html):
         return html
     if re.search(r"assets/themes/", html or "", re.IGNORECASE):
         return html
     if "</head>" not in html:
         return html
     link = '<link rel="stylesheet" id="theme-link" href="../../assets/themes/corporate-clean.css">'
+    return html.replace("</head>", f"{link}\n</head>", 1)
+
+
+def _ensure_asc_theme_link(html: str) -> str:
+    """Inject asc-brand token CSS when Ascentium is explicitly opted in."""
+    if not is_asc_branding_enabled(html):
+        return html
+    if re.search(r"assets/themes/asc-brand\.css", html or "", re.IGNORECASE):
+        return html
+    if "</head>" not in html:
+        return html
+    link = '<link rel="stylesheet" id="theme-link" href="../../assets/themes/asc-brand.css">'
     return html.replace("</head>", f"{link}\n</head>", 1)
 
 
@@ -300,6 +330,18 @@ def inject_inspire_scoped_css_link(html: str) -> str:
     if "</head>" not in html:
         return html
     link = '<link rel="stylesheet" href="../../assets/inspire-deck-scoped.css">'
+    return html.replace("</head>", f"{link}\n</head>", 1)
+
+
+def inject_asc_scoped_css_link(html: str) -> str:
+    """Ensure Ascentium scoped CSS is linked only when explicitly opted in."""
+    if not is_asc_branding_enabled(html):
+        return html
+    if "asc-deck-scoped.css" in html:
+        return html
+    if "</head>" not in html:
+        return html
+    link = '<link rel="stylesheet" href="../../assets/asc-deck-scoped.css">'
     return html.replace("</head>", f"{link}\n</head>", 1)
 
 
@@ -316,8 +358,10 @@ def normalize_html_ppt_source(html: str) -> str:
     text = _ensure_core_head_links(text)
     text = _inject_iframe_boot_script(text)
     text = _ensure_default_theme(text)
+    text = _ensure_asc_theme_link(text)
     text = _ensure_deck_host_body(text)
     text = inject_inspire_scoped_css_link(text)
+    text = inject_asc_scoped_css_link(text)
 
     if not is_inspire_branding_enabled(text):
         return text
@@ -331,6 +375,11 @@ def normalize_html_ppt_source(html: str) -> str:
         return _inject_logo(open_tag, body, close_tag)
 
     return _SLIDE_RE.sub(_fix_slide, text)
+
+
+_EMOJI_RE = re.compile(
+    r"[\U0001F300-\U0001FAFF\U00002600-\U000027BF\U000024C2-\U0001F251]"
+)
 
 
 _META_WARNING_PHRASES = (
@@ -371,6 +420,22 @@ def collect_html_ppt_warnings(*, source: str, normalized: str) -> list[str]:
                 "Inspire content slides need <div class=\"slide-main\"> wrapping title + "
                 "main visual (keeps body vertically centered between logo and copyright). "
                 "See references/inspire-brand.md § Chrome 契约."
+            )
+            break
+
+    if is_asc_branding_enabled(src) and not has_asc_scoped_css_link(src):
+        warnings.append(
+            "Ascentium deck must link ../../assets/asc-deck-scoped.css in <head> "
+            "(along with ../../assets/themes/asc-brand.css). "
+            "asc-brand.css is tokens only — scoped CSS defines slide variants and tables."
+        )
+
+    for match in _SLIDE_RE.finditer(out):
+        if _EMOJI_RE.search(match.group(2)):
+            warnings.append(
+                "Avoid emoji on visible slides — use Lucide icons: "
+                "<span class=\"slide-icon-box\"><i data-lucide=\"target\"></i></span> "
+                "(see references/icons.md)."
             )
             break
 

@@ -31,10 +31,17 @@ _ASSET_REF_RE = re.compile(
 )
 
 _INSPIRE_SCOPED_ASSET = "inspire-deck-scoped.css"
+_ASC_SCOPED_ASSET = "asc-deck-scoped.css"
 _INSPIRE_SCOPED_CSS = HTML_PPT_ASSETS_ROOT / _INSPIRE_SCOPED_ASSET
+_ASC_SCOPED_CSS = HTML_PPT_ASSETS_ROOT / _ASC_SCOPED_ASSET
 _INSPIRE_SCOPED_CSS_FALLBACK = (
     HTML_PPT_SKILL_ROOT / "templates/full-decks/inspire-brand/style.css"
 )
+
+_SCOPED_ASSET_PATHS: dict[str, Path] = {
+    _INSPIRE_SCOPED_ASSET: _INSPIRE_SCOPED_CSS,
+    _ASC_SCOPED_ASSET: _ASC_SCOPED_CSS,
+}
 
 _FX_NAME_RE = re.compile(r"""data-fx=["']([^"']+)["']""", re.IGNORECASE)
 
@@ -82,8 +89,9 @@ def extract_html_ppt_asset_relpaths(html: str) -> set[str]:
             if name and re.fullmatch(r"[a-z0-9-]+", name):
                 rels.add(f"animations/fx/{name}.js")
 
-    if f"assets/{_INSPIRE_SCOPED_ASSET}" in html or _INSPIRE_SCOPED_ASSET in html:
-        rels.add(_INSPIRE_SCOPED_ASSET)
+    for scoped_asset in _SCOPED_ASSET_PATHS:
+        if f"assets/{scoped_asset}" in html or scoped_asset in html:
+            rels.add(scoped_asset)
 
     return rels
 
@@ -95,12 +103,10 @@ def collect_html_ppt_assets(html: str) -> dict[str, bytes]:
 
     files: dict[str, bytes] = {}
     for rel in sorted(extract_html_ppt_asset_relpaths(html)):
-        if rel == _INSPIRE_SCOPED_ASSET:
-            scoped_path = (
-                _INSPIRE_SCOPED_CSS
-                if _INSPIRE_SCOPED_CSS.is_file()
-                else _INSPIRE_SCOPED_CSS_FALLBACK
-            )
+        if rel in _SCOPED_ASSET_PATHS:
+            scoped_path = _SCOPED_ASSET_PATHS[rel]
+            if rel == _INSPIRE_SCOPED_ASSET and not scoped_path.is_file():
+                scoped_path = _INSPIRE_SCOPED_CSS_FALLBACK
             if scoped_path.is_file():
                 files[f"assets/{rel}"] = scoped_path.read_bytes()
             continue

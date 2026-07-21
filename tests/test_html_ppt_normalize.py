@@ -75,6 +75,7 @@ def test_normalize_adds_deck_host_and_default_theme() -> None:
     assert "deck-host" in out
     assert 'name="viewport"' in out
     assert "corporate-clean.css" in out
+    assert "unpkg.com/lucide" in out
 
 
 def test_normalize_strips_comm_advice_footer_block() -> None:
@@ -106,6 +107,27 @@ def test_normalize_injects_scoped_css_for_inspire_layout_classes() -> None:
     assert "inspire-deck-scoped.css" in out
 
 
+def test_normalize_injects_asc_css_when_opted_in() -> None:
+    html = """<!DOCTYPE html><html><head></head><body class="tpl-asc-brand"><div class="deck">
+<section class="slide asc-white"><h2>Body</h2></section>
+</div></body></html>"""
+    out = normalize_html_ppt_source(html)
+    assert "asc-brand.css" in out
+    assert "asc-deck-scoped.css" in out
+    assert "corporate-clean.css" not in out
+
+
+def test_collect_warnings_missing_asc_scoped_css_in_source() -> None:
+    html = """<!DOCTYPE html><html><head>
+<link rel="stylesheet" href="../../assets/themes/asc-brand.css">
+</head><body class="tpl-asc-brand"><div class="deck">
+<section class="slide asc-white"><h2>Hi</h2></section>
+</div></body></html>"""
+    out = normalize_html_ppt_source(html)
+    warnings = collect_html_ppt_warnings(source=html, normalized=out)
+    assert any("asc-deck-scoped.css" in w for w in warnings)
+
+
 def test_build_html_ppt_dist_rewrites_injected_logo_paths() -> None:
     html = """<!DOCTYPE html><html><body class="tpl-inspire-brand"><div class="deck">
 <section class="slide inspire-content"><h2>Hi</h2></section>
@@ -126,6 +148,21 @@ def test_build_html_ppt_dist_bundles_inspire_scoped_css() -> None:
     assert ".tpl-inspire-brand" in scoped
     assert ".slide-main" in scoped
     assert ".inspire-logo" in scoped
+
+
+def test_build_html_ppt_dist_bundles_asc_brand_css() -> None:
+    html = """<!DOCTYPE html><html><head></head><body class="tpl-asc-brand"><div class="deck">
+<section class="slide asc-white"><h2>Hi</h2></section>
+</div></body></html>"""
+    dist = build_html_ppt_dist(html)
+    index = dist["index.html"].decode("utf-8")
+    assert "./assets/themes/asc-brand.css" in index
+    assert "./assets/asc-deck-scoped.css" in index
+    assert "assets/themes/asc-brand.css" in dist
+    assert "assets/asc-deck-scoped.css" in dist
+    scoped = dist["assets/asc-deck-scoped.css"].decode("utf-8")
+    assert ".tpl-asc-brand" in scoped
+    assert ".slide.asc-midnight" in scoped
 
 
 def test_collect_warnings_missing_inspire_scoped_css_in_source() -> None:
@@ -160,3 +197,12 @@ def test_collect_warnings_no_slide_main_noise_for_full_deck_template() -> None:
     out = normalize_html_ppt_source(html)
     warnings = collect_html_ppt_warnings(source=html, normalized=out)
     assert not any("slide-main" in w for w in warnings)
+
+
+def test_collect_warnings_flags_emoji_on_slide() -> None:
+    html = """<!DOCTYPE html><html><body><div class="deck">
+<section class="slide"><h2>Goals 🎯</h2></section></div></body></html>"""
+    out = normalize_html_ppt_source(html)
+    warnings = collect_html_ppt_warnings(source=html, normalized=out)
+    assert any("emoji" in w.lower() for w in warnings)
+    assert any("data-lucide" in w for w in warnings)
