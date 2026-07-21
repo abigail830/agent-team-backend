@@ -6,6 +6,9 @@
   --inspire-creative-muted: #4a9fd8;
   --inspire-gray: #f5f5f6;
   --inspire-section-grad: linear-gradient(135deg, #1b2b47 0%, #4a9fd8 100%);
+  --inspire-safe-top: 88px;
+  --inspire-safe-bottom: 72px;
+  --inspire-safe-x: 60px;
   --bg: #ffffff;
   --bg-soft: #f5f5f6;
   --text-1: #10213e;
@@ -51,10 +54,60 @@ body.deck-host.tpl-inspire-brand .slide.inspire-section {
 
 body.deck-host.tpl-inspire-brand .slide.inspire-agenda,
 body.deck-host.tpl-inspire-brand .slide.inspire-content,
-body.deck-host.tpl-inspire-brand .slide.inspire-interaction {
-  justify-content: flex-start;
+body.deck-host.tpl-inspire-brand .slide.inspire-interaction,
+body.deck-host.tpl-inspire-brand .slide.inspire-case {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: 'head' 'main';
+  padding: var(--inspire-safe-top) var(--inspire-safe-x) var(--inspire-safe-bottom);
+  justify-content: stretch;
   align-items: stretch;
+  align-content: stretch;
   text-align: left;
+}
+
+body.deck-host.tpl-inspire-brand .slide.inspire-content:has(> .slide-main):not(:has(> .slide-header)),
+body.deck-host.tpl-inspire-brand .slide.inspire-interaction:has(> .slide-main):not(:has(> .slide-header)),
+body.deck-host.tpl-inspire-brand .slide.inspire-case:has(> .slide-main):not(:has(> .slide-header)) {
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: 'main';
+}
+
+body.deck-host.tpl-inspire-brand .slide:has(> .slide-header) > .slide-header {
+  grid-area: head;
+}
+
+body.deck-host.tpl-inspire-brand .slide:has(> .slide-main) > .slide-main {
+  grid-area: main;
+  padding-bottom: 0;
+}
+
+.tpl-inspire-brand .slide.inspire-agenda,
+.tpl-inspire-brand .slide.inspire-content,
+.tpl-inspire-brand .slide.inspire-interaction,
+.tpl-inspire-brand .slide.inspire-case {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: 'head' 'main';
+  justify-content: stretch;
+  align-items: stretch;
+  align-content: stretch;
+  text-align: left;
+}
+
+.tpl-inspire-brand .slide.inspire-content:has(> .slide-main):not(:has(> .slide-header)),
+.tpl-inspire-brand .slide.inspire-interaction:has(> .slide-main):not(:has(> .slide-header)),
+.tpl-inspire-brand .slide.inspire-case:has(> .slide-main):not(:has(> .slide-header)) {
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: 'main';
+}
+
+.tpl-inspire-brand .slide:has(> .slide-header) > .slide-header {
+  grid-area: head;
+}
+
+.tpl-inspire-brand .slide:has(> .slide-main) > .slide-main {
+  grid-area: main;
 }
 
 /* ---- chrome (fixed anchors — never in document flow) ---- */
@@ -129,29 +182,48 @@ body.deck-host.tpl-inspire-brand .deck-footer.inspire-footer-light {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: stretch;
   width: 100%;
-  padding-bottom: 48px;
+  padding-bottom: 0;
   box-sizing: border-box;
 }
 
 .tpl-inspire-brand .slide:has(> .inspire-logo) .slide-main {
-  padding-top: 36px;
+  padding-top: 0;
 }
 
 .tpl-inspire-brand .slide-header {
   flex-shrink: 0;
   width: 100%;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 2px solid var(--inspire-starry);
+}
+
+.tpl-inspire-brand .slide-header .inspire-content-title,
+.tpl-inspire-brand .slide-header .inspire-case-title {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+  border-left: none;
+  padding-left: 0;
+}
+
+.tpl-inspire-brand .slide-header .lede {
+  margin-top: 10px;
+  max-width: 80%;
 }
 
 /* Content pages without .slide-main: reserve footer band */
 .tpl-inspire-brand .slide.inspire-content:not(:has(.slide-main)),
 .tpl-inspire-brand .slide.inspire-interaction:not(:has(.slide-main)) {
-  padding-bottom: 72px;
+  padding-bottom: var(--inspire-safe-bottom);
+  padding-top: var(--inspire-safe-top);
 }
 
 .tpl-inspire-brand .slide.inspire-agenda:not(:has(.slide-main)) {
-  padding-top: 72px;
-  padding-bottom: 72px;
+  padding-top: var(--inspire-safe-top);
+  padding-bottom: var(--inspire-safe-bottom);
 }
 
 /* ---- cover ---- */
@@ -296,7 +368,7 @@ body.deck-host.tpl-inspire-brand .deck-footer.inspire-footer-light {
 }
 
 .tpl-inspire-brand .inspire-content-title {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 600;
   padding-bottom: 16px;
   border-bottom: 2px solid var(--inspire-starry);
@@ -340,7 +412,7 @@ body.deck-host.tpl-inspire-brand .deck-footer.inspire-footer-light {
 }
 
 .tpl-inspire-brand .inspire-case-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 600;
   padding-left: 16px;
   border-left: 4px solid var(--inspire-starry);
@@ -360,9 +432,18 @@ body.deck-host.tpl-inspire-brand .deck-footer.inspire-footer-light {
   box-shadow: 0 2px 8px rgba(27, 43, 71, 0.08);
 }
 
-.tpl-inspire-brand .inspire-case-grid .card h4 {
+.tpl-inspire-brand .inspire-case-grid .card p,
+.tpl-inspire-brand .inspire-case-grid .card li,
+.tpl-inspire-brand .slide-main .grid p,
+.tpl-inspire-brand .slide-main .grid li {
+  font-size: clamp(15px, 1rem, 18px);
+  line-height: 1.55;
+}
+
+.tpl-inspire-brand .inspire-case-grid .card h4,
+.tpl-inspire-brand .slide-main .grid h4 {
+  font-size: clamp(16px, 1.05rem, 20px);
   margin: 0 0 8px;
-  font-size: 16px;
   color: var(--inspire-starry);
 }
 

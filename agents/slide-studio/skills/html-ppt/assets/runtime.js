@@ -26,9 +26,18 @@
   function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
 
   function initLucide(){
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-      window.lucide.createIcons({ attrs: { 'aria-hidden': 'true' } });
-    }
+    if (!window.lucide || typeof window.lucide.createIcons !== 'function') return false;
+    window.lucide.createIcons({ attrs: { 'aria-hidden': 'true', 'stroke-width': '2' } });
+    return true;
+  }
+
+  function scheduleLucideInit(){
+    if (initLucide()) return;
+    var attempts = 0;
+    var timer = setInterval(function () {
+      if (initLucide() || ++attempts >= 50) clearInterval(timer);
+    }, 100);
+    window.addEventListener('load', function () { initLucide(); }, { once: true });
   }
 
   function slideClassName(el) {
@@ -37,15 +46,32 @@
     return typeof cls === 'string' ? cls : ((cls && cls.baseVal) || '');
   }
 
-  /** Header/footer/logo stay direct slide children so absolute chrome anchors to the slide box. */
+  /** Logo/footer/title band stay direct slide children — only body may shrink-to-fit. */
   function isSlideChromeNode(el) {
     var cls = slideClassName(el);
-    return /\b(deck-header|deck-footer|inspire-logo)\b/.test(cls)
+    return /\b(deck-header|deck-footer|inspire-logo|slide-header|slide-takeaway)\b/.test(cls)
       && !/\bslide-scale-(?:viewport|root)\b/.test(cls);
   }
 
   function wrapSlideForScale(s) {
-    if (s.querySelector(':scope > .slide-scale-viewport')) return;
+    if (s.querySelector(':scope > .slide-scale-viewport, :scope > .slide-main > .slide-scale-viewport')) return;
+
+    var main = s.querySelector(':scope > .slide-main');
+    if (main && !main.querySelector(':scope > .slide-scale-viewport')) {
+      var mainNodes = Array.from(main.childNodes).filter(function (n) {
+        return !(n.nodeType === 1 && /\bslide-takeaway\b/.test(slideClassName(n)));
+      });
+      if (!mainNodes.length) return;
+
+      var viewport = document.createElement('div');
+      viewport.className = 'slide-scale-viewport';
+      var root = document.createElement('div');
+      root.className = 'slide-scale-root';
+      mainNodes.forEach(function (n) { root.appendChild(n); });
+      viewport.appendChild(root);
+      main.appendChild(viewport);
+      return;
+    }
 
     var root = s.querySelector(':scope > .slide-scale-root');
     if (root) {
@@ -150,7 +176,10 @@
     }
 
     function fitSlideScale(slide) {
-      var viewport = slide && slide.querySelector(':scope > .slide-scale-viewport');
+      var viewport = slide && (
+        slide.querySelector(':scope > .slide-main > .slide-scale-viewport') ||
+        slide.querySelector(':scope > .slide-scale-viewport')
+      );
       var root = viewport && viewport.querySelector(':scope > .slide-scale-root');
       if (!root || !viewport) return;
       root.style.transform = 'none';
@@ -163,6 +192,7 @@
           var needW = root.scrollWidth;
           var needH = root.scrollHeight;
           var scale = Math.min(1, availW / needW, availH / needH) * 0.98;
+          scale = Math.max(scale, 0.88);
           if (scale < 0.995) {
             root.style.transform = 'scale(' + scale + ')';
           } else {
@@ -260,6 +290,7 @@
       /* Signal to parent that preview iframe is ready */
       try { window.parent && window.parent.postMessage({ type: 'preview-ready' }, '*'); } catch(e) {}
       bindSlideFit();
+      scheduleLucideInit();
       return;
     }
 
@@ -274,15 +305,18 @@
     // Are we running inside the presenter popup? (legacy flag, now unused)
     const isPresenterWindow = false;
 
-    /* ===== progress bar ===== */
+    /* ===== progress bar (hidden in deck-host / iframe preview via CSS) ===== */
+    var hideProgressBar = inIframe || document.body.classList.contains('deck-host');
     let bar = document.querySelector('.progress-bar');
-    if (!bar) {
-      bar = document.createElement('div');
-      bar.className = 'progress-bar';
-      bar.innerHTML = '<span></span>';
-      document.body.appendChild(bar);
+    if (!hideProgressBar) {
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.className = 'progress-bar';
+        bar.innerHTML = '<span></span>';
+        document.body.appendChild(bar);
+      }
     }
-    const barFill = bar.querySelector('span');
+    const barFill = bar && bar.querySelector('span');
 
     /* ===== notes overlay (N key) ===== */
     let notes = document.querySelector('.notes-overlay');
@@ -383,7 +417,8 @@
         s.classList.toggle('is-prev', i<n);
       });
       idx = n;
-      barFill.style.width = ((n+1)/total*100)+'%';
+      if (barFill) barFill.style.width = ((n+1)/total*100)+'%';
+      initLucide();
       const numEl = document.querySelector('.slide-number');
       if (numEl) { numEl.setAttribute('data-current', n+1); numEl.setAttribute('data-total', total); }
 
@@ -1126,7 +1161,7 @@
     window.addEventListener('hashchange', fromHash);
     fromHash();
     bindSlideFit();
-    initLucide();
+    scheduleLucideInit();
     go(idx);
   });
 })();

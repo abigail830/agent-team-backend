@@ -199,6 +199,41 @@ def test_collect_warnings_no_slide_main_noise_for_full_deck_template() -> None:
     assert not any("slide-main" in w for w in warnings)
 
 
+def test_normalize_wraps_content_slide_header_and_main() -> None:
+    html = """<!DOCTYPE html><html><body><div class="deck">
+<section class="slide inspire-content"><p class="kicker">Overview</p>
+<h2 class="inspire-content-title">Title here</h2>
+<ul class="inspire-bullets"><li>One</li><li>Two</li></ul>
+</section></div></body></html>"""
+    out = normalize_html_ppt_source(html)
+    assert "slide-header" in out
+    assert "slide-main" in out
+    assert out.index("slide-header") < out.index("slide-main")
+    assert "Title here" in out
+
+
+def test_normalize_fixes_legacy_data_icon_markup() -> None:
+    html = """<!DOCTYPE html><html><body><div class="deck">
+<section class="slide"><div class="grid g4">
+<div class="card"><span class="slide-icon-box sm" data-icon="database"></span><h4>A</h4></div>
+<div class="card"><span class="slide-icon-box sm" data-icon="users"></span><h4>B</h4></div>
+</div></section></div>
+<script src="../../assets/runtime.js"></script></body></html>"""
+    out = normalize_html_ppt_source(html)
+    assert 'data-lucide="database"' in out
+    assert 'data-lucide="users"' in out
+    assert "data-icon=" not in out
+    assert out.index("unpkg.com/lucide") < out.index("runtime.js")
+
+
+def test_normalize_fixes_empty_slide_icon_box() -> None:
+    html = """<!DOCTYPE html><html><body><div class="deck">
+<section class="slide"><span class="slide-icon-box sm"></span><h4>Col</h4></section>
+</div><script src="../../assets/runtime.js"></script></body></html>"""
+    out = normalize_html_ppt_source(html)
+    assert 'data-lucide="layers"' in out
+
+
 def test_collect_warnings_flags_emoji_on_slide() -> None:
     html = """<!DOCTYPE html><html><body><div class="deck">
 <section class="slide"><h2>Goals 🎯</h2></section></div></body></html>"""

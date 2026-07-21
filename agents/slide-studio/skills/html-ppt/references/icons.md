@@ -16,12 +16,23 @@ Normalize injects into every deck `<head>`:
 ## Usage
 
 ```html
-<!-- Pillar / KPI header -->
+<!-- Four pillars — four separate icon boxes -->
+<div class="grid g4">
+  <div class="card">
+    <span class="slide-icon-box sm" aria-hidden="true"><i data-lucide="database"></i></span>
+    <h4>Module 01</h4>
+    <p class="dim">…</p>
+  </div>
+  <div class="card">
+    <span class="slide-icon-box sm" aria-hidden="true"><i data-lucide="messages-square"></i></span>
+    <h4>Module 02</h4>
+  </div>
+  <!-- … -->
+</div>
+
+<!-- Single KPI / pillar -->
 <span class="slide-icon-box" aria-hidden="true"><i data-lucide="rocket"></i></span>
 <h4>Phase 1 delivery</h4>
-
-<!-- Smaller -->
-<span class="slide-icon-box sm" aria-hidden="true"><i data-lucide="trending-up"></i></span>
 
 <!-- List row -->
 <li class="slide-icon-inline">
@@ -37,6 +48,8 @@ Browse all names at [lucide.dev/icons](https://lucide.dev/icons/) — use kebab-
 | Do | Don't |
 |---|---|
 | `<i data-lucide="shield">` inside `.slide-icon-box` | Emoji on visible slides |
+| **One icon box per column/card** (four pillars → four boxes) | One shared icon box for the whole slide |
+| Copy from `three-column.html` / `kpi-grid.html` | Deprecated `data-icon="..."` on empty `<span>` |
 | Semantic icon per block (calendar → milestone) | Random decorative spam |
 | Copy icon markup from `templates/single-page/` layouts | Download SVG files into the repo |
 

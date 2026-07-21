@@ -104,12 +104,12 @@
 | 章节装饰序号 | `.inspire-section-num` | **clamp(4rem, 12vw, 6rem)** | 700 | `#4A9FD8` @ 15% opacity |
 | 内容页标题 | `.inspire-content-title` / `.h2` | **clamp(1.35rem, 2.5vw, 1.75rem)** | 600 | `#10213E` |
 | 三级标题 | `.h3` | **clamp(1.1rem, 2vw, 1.35rem)** | 500–600 | `#1B2B47` |
-| 正文 / bullet | body text | **clamp(0.875rem, 1.4vw, 1.05rem)** | 400 | `#10213E`，行高 1.45–1.6 |
+| 正文 / bullet | body text | **clamp(15px, 1rem, 18px)** | 400 | `#10213E`，行高 1.45–1.6 |
 | 说明 / caption | `.dim2` | **clamp(0.75rem, 1.2vw, 0.9rem)** | 400 | `#64748B` |
 | 标签 / kicker | `.kicker` / `.inspire-part` | **clamp(0.7rem, 1vw, 0.85rem)** | 600 | `#4A9FD8`，大写 + letter-spacing |
 | 页脚 / copyright | `.inspire-footer` | **10–13px** | 400 | `#64748B` 或 white @ 55–65% |
 
-**原则：** 一页内最多 3 级字号对比；长 bullet 列表用较小正文档；**禁止** inline `style="font-size:XXpt"`。
+**原则：** 一页内最多 3 级字号对比；长 bullet 列表用较小正文档；**禁止** inline `style="font-size:XXpt"` 或 **< 14px**；四列布局每栏最多 2 条 bullet，否则拆页。
 
 ---
 

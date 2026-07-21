@@ -105,14 +105,52 @@ body.deck-host .slide-scale-root{
 body.deck-host .slide.is-active{
   display:flex;flex-direction:column;
 }
+/* Content slides: title band fixed at top; body fills remainder (not vertically centered). */
+body.deck-host .slide:not(.center):not(.inspire-cover):not(.inspire-section):not(.inspire-end){
+  justify-content:flex-start;
+  align-content:start;
+}
+body.deck-host .slide:has(> .slide-header){
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  grid-template-areas:"head" "main";
+  align-content:stretch;
+}
+body.deck-host .slide > .slide-header{
+  grid-area:head;
+  flex-shrink:0;
+  width:100%;
+  padding-bottom:clamp(10px,1.2vh,18px);
+  margin-bottom:clamp(8px,1vh,14px);
+  border-bottom:1px solid var(--border);
+}
+body.deck-host .slide > .slide-scale-viewport{grid-area:main;min-height:0;align-self:stretch}
+body.deck-host .slide:has(> .slide-header) > .slide-main{
+  grid-area:main;
+  min-height:0;
+  justify-content:center;
+  align-items:stretch;
+  padding-bottom:0;
+}
+body.deck-host .slide:has(> .slide-main) > .slide-main > .slide-scale-viewport{
+  flex:1;min-height:0;width:100%;
+  display:flex;align-items:center;justify-content:center;
+}
 body.deck-host h1.title,body.deck-host .h1{
   font-size:clamp(28px,4.2vw,44px);line-height:1.08;margin-bottom:12px;
 }
 body.deck-host h2.title,body.deck-host .h2{
-  font-size:clamp(20px,3vw,32px);line-height:1.12;margin-bottom:10px;
+  font-size:clamp(26px,3.4vw,40px);line-height:1.12;margin-bottom:10px;
 }
-body.deck-host h3,body.deck-host .h3{font-size:clamp(16px,2.2vw,24px)}
-body.deck-host .lede{font-size:clamp(14px,1.6vw,18px);max-width:100%}
+body.deck-host h3,body.deck-host .h3{font-size:clamp(18px,2.4vw,26px)}
+body.deck-host .lede{font-size:clamp(16px,1.8vw,20px);max-width:100%}
+body.deck-host .kicker{font-size:clamp(12px,1.2vw,14px)}
+body.deck-host .slide-main .dim,
+body.deck-host .slide-main li,
+body.deck-host .slide-main p:not(.kicker):not(.eyebrow){
+  font-size:clamp(15px,1rem,18px);
+  line-height:1.55;
+}
 body.deck-host .card{padding:clamp(14px,1.8vw,22px) clamp(16px,2vw,24px)}
 body.deck-host .grid{gap:clamp(12px,1.6vw,20px)}
 body:not(.deck-host) .deck{width:100vw;height:100vh}
@@ -196,6 +234,9 @@ body.deck-host.in-iframe .slide-main{padding-bottom:72px}
 .slide-number::after{content:" / " attr(data-total)}
 .progress-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:transparent;z-index:20}
 .progress-bar > span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+/* Artifact / iframe preview: hide presenter progress (reads as a full-width blue bar at 100%). */
+body.deck-host .progress-bar,
+html.in-iframe .progress-bar{display:none!important}
 
 /* ================= PRESENTER / OVERVIEW ================= */
 .notes{display:none!important}
