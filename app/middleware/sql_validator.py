@@ -52,7 +52,15 @@ class SqlValidatorMiddleware(FunctionMiddleware):
 
         result = validate_sql(query, max_rows=self._max_rows)
         if not result.ok:
-            context.result = {"error": result.reason, "function": tool_name}
+            context.result = {
+                "ok": False,
+                "error": result.reason,
+                "hint": (
+                    "Submit a single read-only SELECT (WITH/CTE allowed). "
+                    "Names like Co-Create belong inside quoted strings, e.g. ILIKE '%co-create%'."
+                ),
+                "function": tool_name,
+            }
             raise MiddlewareTermination(f"SQL validation denied: {result.reason}")
 
         if result.normalized_sql != query:

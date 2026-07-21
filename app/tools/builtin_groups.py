@@ -39,11 +39,19 @@ DIAGRAM_TOOL_NAMES = frozenset(
     }
 )
 
+SLIDE_TOOL_NAMES = frozenset(
+    {
+        "render_slidev",
+        "render_html_ppt",
+    }
+)
+
 # Re-export for agent_factory
 __all__ = [
     "PROPOSAL_TOOL_NAMES",
     "VIZ_TOOL_NAMES",
     "DIAGRAM_TOOL_NAMES",
+    "SLIDE_TOOL_NAMES",
     "YL_WORKER2_TOOL_NAMES",
     "resolve_builtin_tools",
 ]

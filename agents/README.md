@@ -80,9 +80,17 @@ allowed_tools:
   - postgres_get_schema
   - postgres_query_data
 
-# MySQL example (agents/sg-sp-analysis → @benborla29/mcp-server-mysql):
+# Smart Proposal example (agents/sg-sp-analysis → mcp-postgres):
+# mcp_servers:
+#   postgres:
+#     env:
+#       DATABASE_URL: ${SG_SP_DATABASE_URL}
+#       DB_READ_ONLY: "true"
 # allowed_tools:
-#   - mysql_query
+#   - postgres_list_tables
+#   - postgres_describe_table
+#   - postgres_get_schema
+#   - postgres_query_data
 
 hooks:
   sql_validator:

@@ -18,6 +18,9 @@ from app.api.schemas import (
     ProposalExportOut,
     ProposalExportRequest,
     ProposalPreviewOut,
+    FulfillmentFormOut,
+    FulfillmentFormPatchIn,
+    FulfillmentFormsOut,
 )
 from app.db.models import AgentModel, Chat
 from app.platform.current_user import get_current_user, get_current_user_id, get_owned_chat
@@ -26,8 +29,15 @@ from app.services.attachment_service import AttachmentService
 from app.services.chat_run import ChatRunService, list_chat_messages
 from app.services.stream_errors import user_facing_stream_error
 from app.services.proposal_preview_service import get_chat_proposal_draft, get_chat_proposal_preview, load_chat_proposal_draft
+from app.services.fulfillment_forms_service import (
+    confirm_chat_fulfillment_form,
+    get_chat_fulfillment_forms,
+    patch_chat_fulfillment_form,
+    reject_chat_fulfillment_form,
+)
 from app.proposal.export_service import ProposalExportError, generate_proposal_docx
-from app.proposal.storage import load_artifact_payload
+from app.artifacts.resolver import load_artifact_payload, load_preview_payload
+from app.artifacts.preview_html import SLIDE_PREVIEW_CSP, prepare_slide_preview_html
 
 router = APIRouter(prefix="/chats", tags=["chats"])
 
@@ -114,6 +124,62 @@ async def get_proposal_draft(
     return ProposalDraftOut(**payload)
 
 
+@router.get("/{chat_id}/fulfillment/forms", response_model=FulfillmentFormsOut)
+async def get_fulfillment_forms(
+    chat: Chat = Depends(get_owned_chat),
+    db: AsyncSession = Depends(get_db),
+) -> FulfillmentFormsOut:
+    try:
+        payload = await get_chat_fulfillment_forms(db, chat.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return FulfillmentFormsOut(**payload)
+
+
+@router.patch("/{chat_id}/fulfillment/forms/{form_id}", response_model=FulfillmentFormOut)
+async def patch_fulfillment_form(
+    form_id: str,
+    body: FulfillmentFormPatchIn,
+    chat: Chat = Depends(get_owned_chat),
+    db: AsyncSession = Depends(get_db),
+) -> FulfillmentFormOut:
+    try:
+        result = await patch_chat_fulfillment_form(db, chat.id, form_id, body.payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return FulfillmentFormOut(status="updated", form=result["form"])
+
+
+@router.post("/{chat_id}/fulfillment/forms/{form_id}/confirm", response_model=FulfillmentFormOut)
+async def confirm_fulfillment_form(
+    form_id: str,
+    chat: Chat = Depends(get_owned_chat),
+    db: AsyncSession = Depends(get_db),
+) -> FulfillmentFormOut:
+    try:
+        result = await confirm_chat_fulfillment_form(db, chat.id, form_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return FulfillmentFormOut(
+        status=result["status"],
+        form=result["form"],
+        fulfillment_item=result.get("fulfillment_item"),
+    )
+
+
+@router.post("/{chat_id}/fulfillment/forms/{form_id}/reject", response_model=FulfillmentFormOut)
+async def reject_fulfillment_form(
+    form_id: str,
+    chat: Chat = Depends(get_owned_chat),
+    db: AsyncSession = Depends(get_db),
+) -> FulfillmentFormOut:
+    try:
+        result = await reject_chat_fulfillment_form(db, chat.id, form_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return FulfillmentFormOut(status=result["status"], form=result["form"])
+
+
 @router.post("/{chat_id}/proposal/export", response_model=ProposalExportOut)
 async def export_proposal(
     body: ProposalExportRequest,
@@ -159,6 +225,40 @@ async def download_artifact(
         headers={
             "Content-Disposition": f'attachment; filename="{payload.filename}"',
         },
+    )
+
+
+@router.get("/{chat_id}/artifacts/{artifact_id}/preview")
+@router.get("/{chat_id}/artifacts/{artifact_id}/preview/")
+async def preview_artifact_index(
+    artifact_id: str,
+    chat: Chat = Depends(get_owned_chat),
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    return await preview_artifact(artifact_id, "index.html", chat, db)
+
+
+@router.get("/{chat_id}/artifacts/{artifact_id}/preview/{file_path:path}")
+async def preview_artifact(
+    artifact_id: str,
+    file_path: str,
+    chat: Chat = Depends(get_owned_chat),
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    _ = db
+    payload = load_preview_payload(chat.id, artifact_id, file_path)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Preview file not found")
+    data = payload.data
+    headers: dict[str, str] = {}
+    if payload.media_type.startswith("text/html"):
+        base_href = f"/api/v1/chats/{chat.id}/artifacts/{artifact_id}/preview/"
+        data = prepare_slide_preview_html(data, base_href=base_href)
+        headers["Content-Security-Policy"] = SLIDE_PREVIEW_CSP
+    return StreamingResponse(
+        iter([data]),
+        media_type=payload.media_type,
+        headers=headers,
     )
 
 

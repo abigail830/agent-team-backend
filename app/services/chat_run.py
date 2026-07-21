@@ -21,8 +21,22 @@ from app.platform.session_store import SessionStore
 from app.platform.user_message_input import build_user_run_input, link_attachments_metadata
 from app.services.attachment_service import AttachmentService
 from app.services.stream_errors import user_facing_stream_error
-from app.proposal.context import get_run_proposal_state, init_run_proposal_state, reset_run_proposal_state
+from app.yl_worker2.fulfillment.context import (
+    get_run_fulfillment_forms_state,
+    init_run_fulfillment_forms_state,
+    reset_run_fulfillment_forms_state,
+)
+from app.yl_worker2.fulfillment.store import (
+    load_fulfillment_forms_from_payload,
+    persist_fulfillment_forms_if_dirty,
+)
 from app.diagram.context import get_run_diagram_state, init_run_diagram_state, reset_run_diagram_state
+from app.artifacts.context import (
+    get_run_artifact_state,
+    init_run_artifact_state,
+    reset_run_artifact_state,
+)
+from app.proposal.context import get_run_proposal_state, init_run_proposal_state, reset_run_proposal_state
 from app.proposal.draft import build_draft_preview
 from app.proposal.store import (
     load_proposal_draft_from_payload,
@@ -40,6 +54,8 @@ _TOOL_ROW_TYPES = frozenset({"tool_call", "tool_result", "mcp_call", "mcp_result
 
 _PROPOSAL_AGENT_SLUG = "proposal-composer"
 _DIAGRAM_AGENT_SLUG = "napkin-architect"
+_SLIDE_AGENT_SLUG = "slide-studio"
+_YL_WORKER2_AGENT_SLUG = "yl-worker2"
 
 
 class ChatRunService:
@@ -154,6 +170,22 @@ class ChatRunService:
             return
         init_run_diagram_state(chat_id=chat.id)
 
+    async def _prepare_slide_context(self, chat: Chat) -> None:
+        agent = await self._db.get(AgentModel, chat.agent_id)
+        if not agent or agent.slug != _SLIDE_AGENT_SLUG:
+            reset_run_artifact_state()
+            return
+        init_run_artifact_state(chat_id=chat.id)
+
+    async def _prepare_fulfillment_forms_context(self, chat: Chat) -> None:
+        agent = await self._db.get(AgentModel, chat.agent_id)
+        if not agent or agent.slug != _YL_WORKER2_AGENT_SLUG:
+            reset_run_fulfillment_forms_state()
+            return
+        payload = await self._sessions.get_payload(chat.id)
+        initial = load_fulfillment_forms_from_payload(payload)
+        init_run_fulfillment_forms_state(chat_id=chat.id, initial_forms=initial)
+
     async def _finalize_success(
         self,
         chat_id: uuid.UUID,
@@ -170,6 +202,7 @@ class ChatRunService:
         else:
             await self._persist_agent_messages(chat_id, response, skip_tool_rows=False)
         await persist_proposal_draft_if_dirty(self._sessions, chat_id)
+        await persist_fulfillment_forms_if_dirty(self._sessions, chat_id)
         await self._sessions.append_completed_turn(
             chat_id,
             memory_config,
@@ -193,6 +226,7 @@ class ChatRunService:
             elif accumulator is not None and accumulator.has_content():
                 await accumulator.persist(self._messages, chat_id)
             await persist_proposal_draft_if_dirty(self._sessions, chat_id)
+            await persist_fulfillment_forms_if_dirty(self._sessions, chat_id)
             await self._persist_run_error(chat_id, exc)
             await self._db.commit()
         except Exception:
@@ -218,6 +252,9 @@ class ChatRunService:
         diagram_ctx = get_run_diagram_state()
         if diagram_ctx is not None:
             specs.extend(diagram_ctx.drain_pending_artifacts())
+        slide_ctx = get_run_artifact_state()
+        if slide_ctx is not None:
+            specs.extend(slide_ctx.drain_pending_artifacts())
         for spec in specs:
             await self._messages.insert(
                 chat_id=chat_id,
@@ -238,7 +275,9 @@ class ChatRunService:
         memory_config = await self._memory_config_for_chat(chat)
         session = await self._sessions.get_or_create(chat_id)
         await self._prepare_proposal_context(chat)
+        await self._prepare_fulfillment_forms_context(chat)
         await self._prepare_diagram_context(chat)
+        await self._prepare_slide_context(chat)
         attachments = await self._resolve_attachments(chat, attachment_ids or [])
         if not content.strip() and not attachments:
             raise ValueError("Message content or attachments required")
@@ -275,6 +314,16 @@ class ChatRunService:
         try:
             async with bundle as agent:
                 result = await agent.run(run_input, session=session)
+            from app.config import get_settings
+            from app.slide.build_jobs import wait_for_slide_build_jobs
+
+            settings = get_settings()
+            if settings.sandbox_async_build:
+                wait_for_slide_build_jobs(
+                    chat_id,
+                    timeout_seconds=max(60.0, settings.sandbox_timeout_seconds + 30.0),
+                )
+            _flush_completed_slide_build_artifacts(chat_id)
             await self._persist_pending_artifacts(chat_id)
             await self._finalize_success(
                 chat_id,
@@ -290,6 +339,7 @@ class ChatRunService:
         finally:
             reset_run_proposal_state()
             reset_run_diagram_state()
+            reset_run_artifact_state()
 
     async def stream_message(
         self,
@@ -302,7 +352,9 @@ class ChatRunService:
         memory_config = await self._memory_config_for_chat(chat)
         session = await self._sessions.get_or_create(chat_id)
         await self._prepare_proposal_context(chat)
+        await self._prepare_fulfillment_forms_context(chat)
         await self._prepare_diagram_context(chat)
+        await self._prepare_slide_context(chat)
         attachments = await self._resolve_attachments(chat, attachment_ids or [])
         if not content.strip() and not attachments:
             raise ValueError("Message content or attachments required")
@@ -384,6 +436,8 @@ class ChatRunService:
                     # follows the agent stream (text ↔ tools ↔ viz interleave naturally).
                     for event in _emit_pending_viz_events(chat_id, accumulator):
                         yield event
+                    for event in _emit_completed_slide_build_events(chat_id, accumulator):
+                        yield event
                     for event in _emit_pending_artifact_events(chat_id, accumulator):
                         yield event
 
@@ -391,7 +445,12 @@ class ChatRunService:
                     yield event
                 for event in _emit_pending_viz_events(chat_id, accumulator):
                     yield event
+                for event in _emit_completed_slide_build_events(chat_id, accumulator):
+                    yield event
                 for event in _emit_pending_artifact_events(chat_id, accumulator):
+                    yield event
+
+                async for event in _await_remaining_slide_build_events(chat_id, accumulator):
                     yield event
 
                 if run.stop_event.is_set():
@@ -442,6 +501,7 @@ class ChatRunService:
             reset_run_viz_state()
             reset_run_proposal_state()
             reset_run_diagram_state()
+            reset_run_artifact_state()
             await run_manager.complete(run.run_id)
 
     async def _persist_agent_messages(
@@ -583,6 +643,9 @@ def _emit_pending_artifact_events(
     diagram_ctx = get_run_diagram_state()
     if diagram_ctx is not None:
         specs.extend(diagram_ctx.drain_pending_artifacts())
+    slide_ctx = get_run_artifact_state()
+    if slide_ctx is not None:
+        specs.extend(slide_ctx.drain_pending_artifacts())
     if not specs:
         return []
 
@@ -599,6 +662,55 @@ def _emit_pending_artifact_events(
             }
         )
     return events
+
+
+def _emit_completed_slide_build_events(
+    chat_id: uuid.UUID,
+    accumulator: "_StreamTurnAccumulator",
+) -> list[dict[str, Any]]:
+    from app.slide.build_jobs import drain_completed_slide_build_jobs
+
+    specs = drain_completed_slide_build_jobs(chat_id)
+    if not specs:
+        return []
+
+    slide_ctx = get_run_artifact_state()
+    if slide_ctx is not None:
+        for spec in specs:
+            slide_ctx.queue_artifact(spec)
+    return _emit_pending_artifact_events(chat_id, accumulator)
+
+
+async def _await_remaining_slide_build_events(
+    chat_id: uuid.UUID,
+    accumulator: "_StreamTurnAccumulator",
+) -> AsyncIterator[dict[str, Any]]:
+    from app.config import get_settings
+    from app.slide.build_jobs import has_pending_slide_build_jobs
+
+    settings = get_settings()
+    if not settings.sandbox_async_build:
+        return
+
+    deadline = asyncio.get_event_loop().time() + max(60.0, settings.sandbox_timeout_seconds + 30.0)
+    while asyncio.get_event_loop().time() < deadline:
+        events = _emit_completed_slide_build_events(chat_id, accumulator)
+        for event in events:
+            yield event
+        if not has_pending_slide_build_jobs(chat_id):
+            return
+        await asyncio.sleep(0.5)
+
+
+def _flush_completed_slide_build_artifacts(chat_id: uuid.UUID) -> None:
+    from app.slide.build_jobs import drain_completed_slide_build_jobs
+
+    specs = drain_completed_slide_build_jobs(chat_id)
+    slide_ctx = get_run_artifact_state()
+    if slide_ctx is None:
+        return
+    for spec in specs:
+        slide_ctx.queue_artifact(spec)
 
 
 def _emit_pending_viz_events(
@@ -942,16 +1054,20 @@ class _StreamSseEmitter:
                     continue
                 self._emitted_results.add(call_id)
                 tool_name = self._call_names.get(call_id, "")
+                result_data: dict[str, Any] = {
+                    "chat_id": chat_id,
+                    "call_id": call_id,
+                    "tool_name": tool_name,
+                    "arguments": self._call_arguments.get(call_id, {}),
+                    "result": _json_safe(getattr(content, "result", None)),
+                }
+                exception = getattr(content, "exception", None)
+                if exception:
+                    result_data["error"] = str(exception)
                 events.append(
                     {
                         "event": "tool_result",
-                        "data": {
-                            "chat_id": chat_id,
-                            "call_id": call_id,
-                            "tool_name": tool_name,
-                            "arguments": self._call_arguments.get(call_id, {}),
-                            "result": _json_safe(getattr(content, "result", None)),
-                        },
+                        "data": result_data,
                     }
                 )
                 if tool_name in {

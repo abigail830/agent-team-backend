@@ -16,6 +16,7 @@ from app.yl_worker2.allocation_links import (
 )
 from app.yl_worker2.db import parse_adjust_date, yl_connect
 from app.yl_worker2.obda import queries as obda
+from app.yl_worker2.runtime.parse import parse_qty
 
 _ALLOC_TYPE = Literal["forward", "lateral"]
 
@@ -123,17 +124,18 @@ async def simulate_allocation_effect(
     snap = await obda.fetch_inventory_snapshot(product_code, to_site_code, adjust_date)
     if snap is None:
         return {"error": "inventory_snapshot_not_found"}
-    plan = float(snap.get("plan_num") or 0)
-    store = float(snap.get("store_num") or 0)
-    transit = float(snap.get("store_transit") or 0)
-    output = float(snap.get("out_put_num") or 0)
+    qty = parse_qty(transfer_qty)
+    plan = parse_qty(snap.get("plan_num"))
+    store = parse_qty(snap.get("store_num"))
+    transit = parse_qty(snap.get("store_transit"))
+    output = parse_qty(snap.get("out_put_num"))
     before = (store + transit + output) / plan if plan else 0.0
-    after = (store + transit + output + transfer_qty) / plan if plan else 0.0
+    after = (store + transit + output + qty) / plan if plan else 0.0
     return {
         "product_code": product_code,
         "to_site_code": to_site_code,
         "adjust_date": adjust_date,
-        "transfer_qty": transfer_qty,
+        "transfer_qty": qty,
         "stock_rate_before": round(before, 4),
         "stock_rate_after": round(after, 4),
         "stock_rate_before_pct": round(before * 100, 1),

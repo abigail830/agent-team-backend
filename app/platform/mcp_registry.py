@@ -89,14 +89,16 @@ class McpRegistry:
                 allowed_tools=mcp_allowed,
             )
 
+        native = _build_native_db_tools(tool_name, config.get("env") or {}, mcp_allowed)
+        if native:
+            logger.info(
+                "Using in-process database tools%s for MCP server %s",
+                " on Vercel" if IS_VERCEL else "",
+                tool_name,
+            )
+            return native
+
         if IS_VERCEL:
-            native = _build_native_db_tools(tool_name, config.get("env") or {}, mcp_allowed)
-            if native:
-                logger.info(
-                    "Using in-process database tools on Vercel for MCP server %s",
-                    tool_name,
-                )
-                return native
             logger.warning(
                 "No in-process database tool mapping for MCP server %s on Vercel",
                 tool_name,
@@ -123,10 +125,11 @@ def _build_native_db_tools(
     allowed_remote_tools: list[str] | None,
 ) -> list[Any] | None:
     if server_name == "postgres":
-        database_url = env.get("DATABASE_URL", "")
-        if not database_url:
+        from app.db.readonly_sql import _postgres_has_config
+
+        if not _postgres_has_config(env):
             return None
-        return build_postgres_tools(database_url, allowed_remote_tools=allowed_remote_tools)
+        return build_postgres_tools(env, allowed_remote_tools=allowed_remote_tools)
     if server_name == "mysql":
         if not env.get("MYSQL_HOST"):
             return None

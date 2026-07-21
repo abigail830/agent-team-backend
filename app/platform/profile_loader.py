@@ -154,13 +154,21 @@ def load_agent_mcp_servers(
     return {name: _resolve_env_deep(cfg) for name, cfg in servers.items()}
 
 
-def _discover_skill_paths(agent_dir: Path, skills_dir_name: str) -> list[Path]:
+def _discover_skill_paths(
+    agent_dir: Path,
+    skills_dir_name: str,
+    *,
+    enabled_skills: list[str] | None = None,
+) -> list[Path]:
     skills_root = agent_dir / skills_dir_name
     if not skills_root.is_dir():
         return []
+    allowed = {name.strip() for name in (enabled_skills or []) if str(name).strip()}
     paths: list[Path] = []
     for child in sorted(skills_root.iterdir()):
         if child.is_dir() and (child / "SKILL.md").exists():
+            if allowed and child.name not in allowed:
+                continue
             paths.append(child)
     return paths
 
@@ -201,7 +209,14 @@ def load_agent_profile(agent_dir: Path) -> AgentProfile:
             model_name = settings.azure_openai_deployment
 
     skills_dir = raw.get("skills_dir") or "skills"
-    skill_paths = _discover_skill_paths(agent_dir, skills_dir)
+    enabled_skills = raw.get("skills")
+    if enabled_skills is not None and not isinstance(enabled_skills, list):
+        enabled_skills = None
+    skill_paths = _discover_skill_paths(
+        agent_dir,
+        skills_dir,
+        enabled_skills=[str(name) for name in enabled_skills] if enabled_skills else None,
+    )
 
     mcp_servers, mcp_server_overrides = _parse_profile_mcp_servers(raw)
 
@@ -214,6 +229,7 @@ def load_agent_profile(agent_dir: Path) -> AgentProfile:
         "model_provider",
         "prompt_file",
         "skills_dir",
+        "skills",
         "mcp_servers",
         "mcp_env",
         "invocation_modes",

@@ -19,6 +19,7 @@ from app.yl_worker2.tools.discovery import (
     search_products,
     search_warehouses,
 )
+from app.yl_worker2.tools.fulfillment_proposal import propose_fulfillment_forms
 from app.yl_worker2.tools.introspection import (
     describe_entity_type,
     list_entity_types,
@@ -70,6 +71,7 @@ YL_WORKER2_TOOL_NAMES = frozenset(
         "describe_table",
         "query_source",
         "follow_ref",
+        "propose_fulfillment_forms",
         "list_pending_allocation_orders",
         "simulate_allocation_effect",
         "save_forward_allocation_draft",
@@ -104,6 +106,7 @@ YL_WORKER2_TOOLS = {
     "describe_table": describe_table,
     "query_source": query_source,
     "follow_ref": follow_ref,
+    "propose_fulfillment_forms": propose_fulfillment_forms,
     "list_pending_allocation_orders": list_pending_allocation_orders,
     "simulate_allocation_effect": simulate_allocation_effect,
     "save_forward_allocation_draft": save_forward_allocation_draft,

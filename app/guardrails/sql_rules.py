@@ -28,6 +28,12 @@ def _strip_comments(sql: str) -> str:
     return re.sub(r"/\*.*?\*/", "", without_line, flags=re.DOTALL)
 
 
+def _strip_string_literals(sql: str) -> str:
+    """Remove quoted literals before keyword scans (avoid '%co-create%' matching CREATE)."""
+    without_single = re.sub(r"'(?:[^']|'')*'", "''", sql)
+    return re.sub(r'"(?:[^"]|"")*"', '""', without_single)
+
+
 def _ensure_limit(sql: str, max_rows: int) -> str:
     match = _LIMIT.search(sql)
     if match:
@@ -56,7 +62,7 @@ def validate_sql(query: str, *, max_rows: int = 2000) -> SqlValidationResult:
     if not _READ_ONLY_START.match(cleaned):
         return SqlValidationResult(ok=False, reason="Only SELECT queries (including WITH/CTE) are allowed")
 
-    if _FORBIDDEN.search(cleaned):
+    if _FORBIDDEN.search(_strip_string_literals(cleaned)):
         return SqlValidationResult(ok=False, reason="Only read-only SELECT queries are allowed")
 
     normalized = _ensure_limit(cleaned, max_rows)

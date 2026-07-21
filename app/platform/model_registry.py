@@ -22,6 +22,11 @@ class ModelProvider(str, Enum):
     AZURE_ANTHROPIC = "azure_anthropic"
 
 
+_FUNCTION_INVOCATION_CONFIG = {
+    "include_detailed_errors": True,
+}
+
+
 class ModelProviderRegistry:
     """Build MAF chat clients and agents from platform / agent configuration."""
 
@@ -43,6 +48,7 @@ class ModelProviderRegistry:
             api_key=api_key or s.azure_api_key,
             base_url=_azure_responses_base_url(resolved_base),
             api_version=api_version or s.azure_openai_api_version,
+            function_invocation_configuration=_FUNCTION_INVOCATION_CONFIG,
         )
 
     def create_azure_anthropic_client(self, *, model: str | None = None) -> PlatformAnthropicClient:
@@ -54,6 +60,7 @@ class ModelProviderRegistry:
             model=model or s.claude_azure_foundry_model,
             base_url=s.claude_azure_foundry_endpoint.rstrip("/"),
             additional_beta_flags=[FILES_API_BETA],
+            function_invocation_configuration=_FUNCTION_INVOCATION_CONFIG,
         )
 
     def create_agent(

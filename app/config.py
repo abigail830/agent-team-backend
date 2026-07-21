@@ -67,6 +67,12 @@ class Settings(BaseSettings):
     redis_url: str = Field(validation_alias="REDIS_URL")
     yl_database_url: str | None = Field(default=None, validation_alias="YL_DATABASE_URL")
 
+    fulfillment_api_base_url: str | None = Field(
+        default="https://yl-backend.evolving.team/api/v1",
+        validation_alias="FULFILLMENT_API_BASE_URL",
+    )
+    fulfillment_api_key: str | None = Field(default=None, validation_alias="FULFILLMENT_API_KEY")
+
     # Fernet key for encrypting MCP credentials at rest in the database
     mcp_secrets_key: str | None = Field(default=None, validation_alias="MCP_SECRETS_KEY")
 
@@ -106,6 +112,16 @@ class Settings(BaseSettings):
         default=False,
         validation_alias="SYNC_AGENT_PROFILES_ON_STARTUP",
     )
+
+    # Sandbox (agents/slide-studio) — E2B default; local skips Slidev build
+    sandbox_provider: str = Field(default="e2b", validation_alias="SANDBOX_PROVIDER")
+    e2b_api_key: str | None = Field(default=None, validation_alias="E2B_API_KEY")
+    e2b_slidev_template: str | None = Field(default=None, validation_alias="E2B_SLIDEV_TEMPLATE")
+    sandbox_timeout_seconds: float = Field(default=180.0, validation_alias="SANDBOX_TIMEOUT_SECONDS")
+    sandbox_slidev_export_pdf: bool = Field(default=False, validation_alias="SANDBOX_SLIDEV_EXPORT_PDF")
+    sandbox_reuse_session: bool = Field(default=True, validation_alias="SANDBOX_REUSE_SESSION")
+    sandbox_slidev_cache: bool = Field(default=True, validation_alias="SANDBOX_SLIDEV_CACHE")
+    sandbox_async_build: bool = Field(default=False, validation_alias="SANDBOX_ASYNC_BUILD")
 
     app_name: str = "agent-platform"
     debug: bool = False

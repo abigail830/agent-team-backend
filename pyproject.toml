@@ -26,12 +26,14 @@ dependencies = [
     "docxtpl>=0.19.0",
     "docxcompose>=1.4.0",
     "pymysql>=1.2.0",
+    "e2b-code-interpreter>=1.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
+    "e2b>=1.0.0",
 ]
 
 [build-system]

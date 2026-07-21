@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 SESSION_TTL_SECONDS = 60 * 60 * 24
 WORKING_SET_VERSION = 1
 # Extensions that must survive redis/DB merge (redis may lag behind DB on cold start).
-_PERSISTED_EXTENSION_KEYS = ("proposal_draft",)
+_PERSISTED_EXTENSION_KEYS = ("proposal_draft", "fulfillment_forms")
 
 
 class SessionStore:

@@ -4,7 +4,7 @@ from typing import Any
 
 from agent_framework import Content, Message
 
-from app.memory.projectors.utils import ensure_dict
+from app.memory.projectors.utils import ensure_dict, stringify_function_call_arguments
 from app.platform.attachment_adapters import metadata_attachment_to_maf_content
 from app.platform.platform_instructions import RUN_CANCELLED_USER_TEXT
 
@@ -58,7 +58,7 @@ def _row_to_content(row: dict[str, Any]) -> Content | None:
         return Content.from_function_call(
             call_id=str(metadata.get("call_id") or row.get("id")),
             name=str(metadata.get("tool_name") or metadata.get("name") or "unknown"),
-            arguments=ensure_dict(metadata.get("arguments")),
+            arguments=stringify_function_call_arguments(metadata.get("arguments")),
         )
 
     return None

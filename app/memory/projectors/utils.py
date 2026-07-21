@@ -23,6 +23,17 @@ def ensure_dict(value: Any) -> dict[str, Any]:
     return {}
 
 
+def stringify_function_call_arguments(value: Any) -> str:
+    """OpenAI Responses API requires function_call.arguments to be a JSON string."""
+    if isinstance(value, str):
+        stripped = value.strip()
+        return stripped or "{}"
+    if isinstance(value, dict):
+        return json.dumps(value, ensure_ascii=False)
+    coerced = ensure_dict(value)
+    return json.dumps(coerced, ensure_ascii=False) if coerced else "{}"
+
+
 def preview_text(text: str, max_chars: int, *, label: str = "") -> str:
     cleaned = " ".join((text or "").split())
     if not cleaned:

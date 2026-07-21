@@ -21,18 +21,18 @@ def _remote_allowed(remote: str, allowed_remote_tools: list[str] | None) -> bool
 
 
 def build_postgres_tools(
-    database_url: str,
+    env: dict[str, str],
     *,
     allowed_remote_tools: list[str] | None,
 ) -> list[Any]:
     tools: list[Any] = []
-    db_url = database_url
+    db_env = dict(env)
 
     if _remote_allowed("list_tables", allowed_remote_tools):
 
         @tool(name="postgres_list_tables", description="List tables and views in the database.")
         async def postgres_list_tables_tool(schema: str = "public") -> str:
-            return await postgres_list_tables(db_url, schema)
+            return await postgres_list_tables(db_env, schema)
 
         tools.append(postgres_list_tables_tool)
 
@@ -43,7 +43,7 @@ def build_postgres_tools(
             table_name: str,
             schema: str = "public",
         ) -> str:
-            return await postgres_describe_table(db_url, table_name, schema)
+            return await postgres_describe_table(db_env, table_name, schema)
 
         tools.append(postgres_describe_table_tool)
 
@@ -51,7 +51,7 @@ def build_postgres_tools(
 
         @tool(name="postgres_get_schema", description="Return table and column schema metadata.")
         async def postgres_get_schema_tool(schema: str = "public") -> str:
-            return await postgres_get_schema(db_url, schema)
+            return await postgres_get_schema(db_env, schema)
 
         tools.append(postgres_get_schema_tool)
 
@@ -59,7 +59,7 @@ def build_postgres_tools(
 
         @tool(name="postgres_query_data", description="Execute a read-only SQL query.")
         async def postgres_query_data_tool(query: str, max_rows: int = MAX_ROWS) -> str:
-            return await postgres_query_data(db_url, query, max_rows)
+            return await postgres_query_data(db_env, query, max_rows)
 
         tools.append(postgres_query_data_tool)
 

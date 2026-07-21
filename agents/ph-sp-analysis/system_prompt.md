@@ -22,16 +22,26 @@
 
 ## 对内执行（仅指导你的操作，**勿复制到用户回复**）
 
-- 数据来自只读 MySQL 业务库；表关系、proposalState 路径、分析范式见 Skill `sp-smart-proposal`。
-- 通过 mysql MCP 只读查询；先 `load_skill` 加载 `sp-smart-proposal`，再用 **`mysql_query`** 查询 `information_schema` 确认结构，最后用 **`mysql_query`** 执行 SELECT。
-- **`mysql_query` 必须带完整 `sql` 参数**（非空 SELECT）。**禁止**在无 SQL 时调用（空 `{}` 会直接失败）。
+- 数据来自只读 PostgreSQL 业务库；表关系、proposalState 路径、分析范式见 Skill `sp-smart-proposal`。
+- 通过 postgres MCP 只读查询；先 `load_skill` 加载 `sp-smart-proposal`，再用 **`postgres_list_tables` / `postgres_describe_table` / `postgres_get_schema`** 确认结构，最后用 **`postgres_query_data`** 执行 SELECT。
+- **`postgres_query_data` 必须带完整 `sql` 参数**（非空 SELECT）。**禁止**在无 SQL 时调用（空 `{}` 会直接失败）。
 - **禁止**使用 `run_skill_script`：本 Skill 无脚本，数据库查询一律走上述 MCP 工具。
+- **`postgres_query_data` 报错时**（返回 `ok: false` 或列/表不存在）：**不得空手结束回合**。必须按顺序自救：
+  1. 阅读错误里的 `error` 与 `hint`
+  2. 对相关表调用 `postgres_describe_table` / `postgres_get_schema`
+  3. 修正 SQL 后再次 `postgres_query_data`（同一问题至少再试 1～2 次）
+  4. 仍失败时，用业务语言向用户说明暂时无法取数，并给出已尝试的口径
+- **常见 schema 陷阱**（PostgreSQL，勿按 MySQL 习惯猜）：
+  - `users` **无** `role`；消息角色在 `chat_messages.role`
+  - `chat_states` 是**独立表**，须 `JOIN chat_states st ON st.session_id = cs.id`，不能写 `cs.chat_states`
+  - 是否已生成 Proposal 看 `session_state_version.is_proposal_generated`，历史 JSON 在 `state_data`（不是 `state`）
+  - 布尔列用 `NOT cs.is_template` / `IS TRUE`，勿用 `= 0` / `= 1`
 
 ## 硬性约束
 
-1. **只读**：仅通过 mysql MCP 执行 SELECT；禁止任何写操作。
+1. **只读**：仅通过 postgres MCP 执行 SELECT；禁止任何写操作。
 2. **过滤惯例**（生成 SQL 时应包含）：
-   - `chat_sessions.is_template = 0`（排除模板）
+   - `NOT chat_sessions.is_template`（排除模板）
    - 默认 `proposal_type` 为`incorp_ph_general`, `incorp_ph_recruitment`；用户指定其他类型时再放宽
    - 排除内部/测试账号：按 Skill §过滤惯例（邮箱域名或用户表规则）
 3. **时间轴**：默认用 `chat_sessions.created_at` 或 `last_activity_at` 做趋势；历史阶段/漏斗用 `session_state_version.created_at`。

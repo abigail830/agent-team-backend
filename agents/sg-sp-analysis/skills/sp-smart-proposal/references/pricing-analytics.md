@@ -1,5 +1,7 @@
 # 定价与金额分析
 
+> **PostgreSQL**：JSON 用 `::jsonb` + `jsonb_array_elements`；正则用 `~`；勿用 `JSON_TABLE` / `REGEXP` / `JSON_KEYS`。
+
 ## 指标定义
 
 | 指标 | 数据源 |
@@ -9,33 +11,31 @@
 | 目录标准价 | `service_and_fee_sg_incorp.hubspot_price`, `standard_pricing` |
 | 覆盖定价 | `pricing_overrides`（对象，按路径对照 Skill §proposalState） |
 
-JSON 中金额常为 **字符串**，分析时用 `CAST(... AS DECIMAL(18,2))` 并过滤非数字。
+JSON 中金额常为 **字符串**，分析时用 `CAST(... AS numeric(18,2))` 并过滤非数字。若 `amount` 为空，可改查 `one_off_fee` / `recurring_fee` / `annual_fee`。
 
 ## 行项目金额分布（按 SKU）
 
 ```sql
 SELECT
-  jt.sku,
+  svc_elem->>'sku' AS sku,
   COUNT(*) AS n,
-  MIN(CAST(jt.amount AS DECIMAL(18,2))) AS min_amount,
-  MAX(CAST(jt.amount AS DECIMAL(18,2))) AS max_amount,
-  AVG(CAST(jt.amount AS DECIMAL(18,2))) AS avg_amount
+  MIN(CAST(svc_elem->>'amount' AS numeric(18,2))) AS min_amount,
+  MAX(CAST(svc_elem->>'amount' AS numeric(18,2))) AS max_amount,
+  AVG(CAST(svc_elem->>'amount' AS numeric(18,2))) AS avg_amount
 FROM chat_sessions cs
 JOIN chat_states st ON st.session_id = cs.id
-JOIN JSON_TABLE(
-  st.state,
-  '$.business_case_services.business_cases[*].services[*]'
-  COLUMNS (
-    sku VARCHAR(128) PATH '$.sku',
-    amount VARCHAR(64) PATH '$.amount'
-  )
-) AS jt ON TRUE
-WHERE cs.is_template = 0
+CROSS JOIN LATERAL jsonb_array_elements(
+  COALESCE(st.state::jsonb->'business_case_services'->'business_cases', '[]'::jsonb)
+) AS bc(bc_elem)
+CROSS JOIN LATERAL jsonb_array_elements(
+  COALESCE(bc_elem->'services', '[]'::jsonb)
+) AS svc(svc_elem)
+WHERE NOT cs.is_template
   AND cs.proposal_type IN ('incorp_sg_sme', 'SME', 'sg_sme')
-  AND cs.created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)
-  AND jt.amount REGEXP '^[0-9]+(\\.[0-9]+)?$'
-GROUP BY jt.sku
-HAVING n >= 5
+  AND cs.created_at >= NOW() - INTERVAL '90 days'
+  AND svc_elem->>'amount' ~ '^[0-9]+(\.[0-9]+)?$'
+GROUP BY svc_elem->>'sku'
+HAVING COUNT(*) >= 5
 ORDER BY n DESC
 LIMIT 100;
 ```
@@ -44,25 +44,20 @@ LIMIT 100;
 
 ```sql
 SELECT
-  jt.currency,
+  inv_elem->>'currency' AS currency,
   COUNT(*) AS lines,
-  AVG(CAST(jt.total AS DECIMAL(18,2))) AS avg_total,
-  MIN(CAST(jt.total AS DECIMAL(18,2))) AS min_total,
-  MAX(CAST(jt.total AS DECIMAL(18,2))) AS max_total
+  AVG(CAST(inv_elem->>'total' AS numeric(18,2))) AS avg_total,
+  MIN(CAST(inv_elem->>'total' AS numeric(18,2))) AS min_total,
+  MAX(CAST(inv_elem->>'total' AS numeric(18,2))) AS max_total
 FROM chat_sessions cs
 JOIN chat_states st ON st.session_id = cs.id
-JOIN JSON_TABLE(
-  st.state,
-  '$.first_total_invoice[*]'
-  COLUMNS (
-    currency VARCHAR(16) PATH '$.currency',
-    total VARCHAR(64) PATH '$.total'
-  )
-) AS jt ON TRUE
-WHERE cs.is_template = 0
-  AND cs.created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)
-  AND jt.total REGEXP '^[0-9]+(\\.[0-9]+)?$'
-GROUP BY jt.currency
+CROSS JOIN LATERAL jsonb_array_elements(
+  COALESCE(st.state::jsonb->'first_total_invoice', '[]'::jsonb)
+) AS inv(inv_elem)
+WHERE NOT cs.is_template
+  AND cs.created_at >= NOW() - INTERVAL '90 days'
+  AND inv_elem->>'total' ~ '^[0-9]+(\.[0-9]+)?$'
+GROUP BY inv_elem->>'currency'
 LIMIT 200;
 ```
 
@@ -70,24 +65,22 @@ LIMIT 200;
 
 ```sql
 SELECT
-  jt.sku,
-  CAST(jt.amount AS DECIMAL(18,2)) AS quoted_amount,
+  svc_elem->>'sku' AS sku,
+  CAST(svc_elem->>'amount' AS numeric(18,2)) AS quoted_amount,
   cat.hubspot_price AS catalog_price,
   cs.id AS session_id
 FROM chat_sessions cs
 JOIN chat_states st ON st.session_id = cs.id
-JOIN JSON_TABLE(
-  st.state,
-  '$.business_case_services.business_cases[*].services[*]'
-  COLUMNS (
-    sku VARCHAR(128) PATH '$.sku',
-    amount VARCHAR(64) PATH '$.amount'
-  )
-) AS jt ON TRUE
-JOIN service_and_fee_sg_incorp cat ON cat.sku = jt.sku AND cat.is_active = 1
-WHERE cs.is_template = 0
-  AND cs.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-  AND jt.amount REGEXP '^[0-9]+(\\.[0-9]+)?$'
+CROSS JOIN LATERAL jsonb_array_elements(
+  COALESCE(st.state::jsonb->'business_case_services'->'business_cases', '[]'::jsonb)
+) AS bc(bc_elem)
+CROSS JOIN LATERAL jsonb_array_elements(
+  COALESCE(bc_elem->'services', '[]'::jsonb)
+) AS svc(svc_elem)
+JOIN service_and_fee_sg_incorp cat ON cat.sku = svc_elem->>'sku' AND cat.is_active IS TRUE
+WHERE NOT cs.is_template
+  AND cs.created_at >= NOW() - INTERVAL '30 days'
+  AND svc_elem->>'amount' ~ '^[0-9]+(\.[0-9]+)?$'
 LIMIT 500;
 ```
 
@@ -97,16 +90,17 @@ LIMIT 500;
 
 ```sql
 SELECT
-  SUM(JSON_LENGTH(JSON_KEYS(st.state, '$.pricing_overrides')) > 0) AS with_overrides,
+  COUNT(*) FILTER (
+    WHERE jsonb_typeof(st.state::jsonb->'pricing_overrides') = 'object'
+      AND st.state::jsonb->'pricing_overrides' <> '{}'::jsonb
+  ) AS with_overrides,
   COUNT(*) AS total
 FROM chat_states st
 JOIN chat_sessions cs ON cs.id = st.session_id
-WHERE cs.is_template = 0
-  AND cs.created_at >= DATE_SUB(NOW(), INTERVAL 60 DAY)
+WHERE NOT cs.is_template
+  AND cs.created_at >= NOW() - INTERVAL '60 days'
 LIMIT 2000;
 ```
-
-（若 `pricing_overrides` 为空对象，`JSON_KEYS` 行为需用 `information_schema.columns` + 小样本验证后调整。）
 
 ## 注意
 

@@ -123,6 +123,22 @@ class ProposalDraftOut(BaseModel):
     state_fingerprint: str
 
 
+class FulfillmentFormsOut(BaseModel):
+    chat_id: str
+    forms: list[dict[str, Any]] = Field(default_factory=list)
+    count: int = 0
+
+
+class FulfillmentFormPatchIn(BaseModel):
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class FulfillmentFormOut(BaseModel):
+    status: str
+    form: dict[str, Any]
+    fulfillment_item: dict[str, Any] | None = None
+
+
 class MemoryBulletOut(BaseModel):
     prefix: str
     text: str

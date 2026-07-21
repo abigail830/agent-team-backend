@@ -1,5 +1,5 @@
 id: proposal-composer
-name: "Proposal Composer"
+name: "Proposal Chef"
 description: "Cross-jurisdiction proposal drafting with MDM catalog, templates, and deterministic pricing."
 
 # model_provider: azure_openai

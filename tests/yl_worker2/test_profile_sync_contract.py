@@ -14,6 +14,7 @@ def test_yl_worker2_disk_profile_has_discovery_tools():
         "search_products",
         "search_warehouses",
         "resolve_entity",
+        "propose_fulfillment_forms",
         "query_snapshot_catalog",
         "list_sources",
         "describe_table",

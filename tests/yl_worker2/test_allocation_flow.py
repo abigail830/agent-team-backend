@@ -7,6 +7,7 @@ import pytest
 from app.yl_worker2.tools.allocation import (
     activate_allocation_and_push,
     save_forward_allocation_draft,
+    simulate_allocation_effect,
     update_allocation_quantity,
 )
 from tests.yl_worker2.conftest import (
@@ -72,3 +73,17 @@ async def test_forward_draft_update_activate_dual_write(require_p1_snapshot):
         assert float(mock["transfer_qty"]) == 1600
     finally:
         await conn.close()
+
+
+@pytest.mark.asyncio
+@requires_yl_db
+async def test_simulate_allocation_accepts_string_transfer_qty(require_p1_snapshot):
+    result = await simulate_allocation_effect(
+        MOCK_PRODUCT,
+        MOCK_SITE_ZHENGZHOU,
+        MOCK_SNAPSHOT_DATE,
+        "2294",
+    )
+    assert "error" not in result
+    assert result["transfer_qty"] == 2294
+    assert result["stock_rate_after_pct"] == pytest.approx(72.0, abs=0.2)

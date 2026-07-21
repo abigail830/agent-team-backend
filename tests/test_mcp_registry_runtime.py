@@ -49,3 +49,34 @@ def test_mcp_registry_skips_stdio_subprocess_on_vercel(monkeypatch):
 
     result = mcp_registry.McpRegistry(db=object())._build_tool(FakeRow(), profile_allowed=[])
     assert result is None
+
+
+def test_mcp_registry_uses_in_process_postgres_locally(monkeypatch):
+    monkeypatch.setattr(mcp_registry, "IS_VERCEL", False)
+
+    class FakeRow:
+        name = "sg-sp-analysis:postgres"
+        transport = "stdio"
+        description = "postgres"
+        connection = {
+            "schema_version": 2,
+            "transport": "stdio",
+            "config": {
+                "command": "npx",
+                "args": ["-y", "mcp-postgres@latest"],
+                "env": {
+                    "DATABASE_URL": "postgresql://reader:secret@db.example.com/app",
+                    "DB_READ_ONLY": "true",
+                },
+            },
+            "tool_name": "postgres",
+        }
+
+    result = mcp_registry.McpRegistry(db=object())._build_tool(
+        FakeRow(),
+        profile_allowed=["postgres_query_data", "postgres_list_tables"],
+    )
+    assert isinstance(result, list)
+    names = {getattr(tool, "name", "") for tool in result}
+    assert "postgres_query_data" in names
+    assert "postgres_list_tables" in names

@@ -1,11 +1,11 @@
-# MCP servers for this agent only. Reference by key in profile.yaml (mcp_servers.mysql).
-# Per-agent env (MYSQL_*, credentials) belongs in profile.yaml, not here.
+# MCP servers for this agent only. Reference by key in profile.yaml (mcp_servers.postgres).
+# Per-agent env (AU_SP_DATABASE_URL) belongs in profile.yaml, not here.
 #
-# Package: @benborla29/mcp-server-mysql (read-only by default, supports remote DB + SSL)
-# Tool: mysql_query
+# Package: mcp-postgres@latest (read-only via DB_READ_ONLY)
+# Tools: postgres_list_tables, postgres_describe_table, postgres_get_schema, postgres_query_data
 servers:
-  mysql:
+  postgres:
     command: ${NPX_PATH:-npx}
     args:
       - -y
-      - "@benborla29/mcp-server-mysql"
+      - mcp-postgres@latest

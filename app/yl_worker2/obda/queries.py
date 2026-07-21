@@ -325,6 +325,26 @@ async def fetch_base_warehouse_availability(
         rows = await conn.fetch(
             """
             SELECT
+                r.warehouse_code AS from_site_code,
+                COALESCE(w.site_name, r.warehouse_code) AS from_site_name,
+                COALESCE(r.spot_inventory, 0) AS from_store_num_h,
+                COALESCE(r.spot_inventory, 0) AS from_available
+            FROM warehouse_sku_inventory r
+            LEFT JOIN yl_warehouse w ON w.site_code = r.warehouse_code
+            WHERE r.sku_code = $1
+              AND r.snapshot_date = $2::date
+              AND r.warehouse_code LIKE 'MOCK_WH_B%'
+            ORDER BY r.warehouse_code
+            """,
+            product_code,
+            parse_adjust_date(adjust_date),
+        )
+        if rows:
+            return enrich_base_rows(rows_to_dicts(rows), to_site_code)
+
+        rows = await conn.fetch(
+            """
+            SELECT
                 w.site_code AS from_site_code,
                 w.site_name AS from_site_name,
                 COALESCE(i.store_num, 0) AS from_store_num_h,
@@ -333,7 +353,7 @@ async def fetch_base_warehouse_availability(
             LEFT JOIN yl_spot_inventory i
               ON i.site_code = w.site_code
              AND i.product_code = $1
-             AND i.ds = $2::date
+             AND i.ds::date = $2::date
              AND i.status = '合格'
              AND COALESCE(i.is_delete, 0) = 0
             WHERE w.site_type = 0

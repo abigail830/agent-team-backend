@@ -15,7 +15,9 @@ build/
 htmlcov/
 .run/
 data/proposal-artifacts/
+data/chat-artifacts/
 data/chat-attachments/
+data/slide-build-cache/
 .DS_Store
 **/.DS_Store
 .idea/

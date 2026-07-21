@@ -1,6 +1,6 @@
 id: yl-worker2
 name: "YL-Worker-002"
-description: "伊利奶粉事业部调度管理组工作助手（本体驱动）"
+description: "伊利成人营养品事业部调度管理组工作助手（本体驱动）"
 
 model_provider: azure_anthropic
 model: ${CLAUDE_AZURE_FOUNDRY_MODEL}
@@ -33,6 +33,7 @@ allowed_tools:
   - describe_table
   - query_source
   - follow_ref
+  - propose_fulfillment_forms
   - list_pending_allocation_orders
   - simulate_allocation_effect
   - save_forward_allocation_draft

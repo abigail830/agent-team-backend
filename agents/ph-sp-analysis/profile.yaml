@@ -1,6 +1,6 @@
 id: ph-sp-analysis
 name: "Proposal Analyst - PH"
-description: "Smart Proposal PH usage, product mix, pricing, and deal analytics (read-only MySQL)"
+description: "Smart Proposal PH usage, product mix, pricing, and deal analytics (read-only PostgreSQL)"
 
 model_provider: azure_anthropic
 model: ${CLAUDE_AZURE_FOUNDRY_MODEL}
@@ -8,22 +8,23 @@ prompt_file: system_prompt.md
 skills_dir: skills
 
 mcp_servers:
-  mysql:
+  postgres:
     env:
-      MYSQL_HOST: ${PH_SP_MYSQL_HOST}
-      MYSQL_PORT: ${PH_SP_MYSQL_PORT}
-      MYSQL_USER: ${PH_SP_MYSQL_USER}
-      MYSQL_PASS: ${PH_SP_MYSQL_PASSWORD}
-      MYSQL_DB: ${PH_SP_MYSQL_DATABASE}
-      MYSQL_SSL: "true"
-      ALLOW_INSERT_OPERATION: "false"
-      ALLOW_UPDATE_OPERATION: "false"
-      ALLOW_DELETE_OPERATION: "false"
-      ALLOW_DDL_OPERATION: "false"
+      DB_HOST: ${PH_SP_DB_HOST}
+      DB_PORT: ${PH_SP_DB_PORT:-5432}
+      DB_USER: ${PH_SP_DB_USER}
+      DB_PASSWORD: ${PH_SP_DB_PASSWORD}
+      DB_NAME: ${PH_SP_DB_NAME:-smart_proposal_ph}
+      DB_SSL_MODE: require
+      DB_READ_ONLY: "true"
+
 allowed_tools:
   - list_sql_results
   - suggest_visualization
-  - mysql_query
+  - postgres_list_tables
+  - postgres_describe_table
+  - postgres_get_schema
+  - postgres_query_data
 
 hooks:
   sql_validator:
@@ -39,4 +40,4 @@ memory:
   cold_resume_max_turns: 10
   slim:
     enabled: true
-    default_preview_chars: 200  
+    default_preview_chars: 200

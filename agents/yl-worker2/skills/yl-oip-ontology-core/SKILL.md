@@ -1,6 +1,6 @@
 ---
 name: yl-oip-ontology-core
-description: 伊利奶粉事业部调度管理组工作助手（本体驱动）：主数据模糊查询、库存监控解读、分仓补调与调拨。OIP 本体模型、实体关系与推理规约。用户问产品/仓网/指标/巡检/补调/调拨/外系统事件时，会话首轮必须先 load 本 Skill。公式与阈值在各 Tool description。
+description: 伊利成人营养品事业部调度管理组工作助手（本体驱动）：主数据模糊查询、库存监控解读、分仓补调与调拨。OIP 本体模型、实体关系与推理规约。用户问产品/仓网/指标/巡检/补调/调拨/外系统事件时，会话首轮必须先 load 本 Skill。公式与阈值在各 Tool description。事业部口径为成人营养品事业部（CRYYBU）。
 ---
 
 # OIP 本体核心（yl-oip-ontology-core）
@@ -65,10 +65,27 @@ Agent 按依赖顺序调用，不跳步、不颠倒。
 3. **向经理汇报**：用业务语言转述 `applied_rule`，不贴 JSON，不报 SQL。
 4. **规则变更**：只改 Tool 实现 + Tool description；本 Skill 描述的仍是「规则在模型中的角色」，不是具体条文。
 
+## 事业部（BusinessUnit）口径
+
+| 维度 | 值 |
+|------|-----|
+| 展示名称 | **成人营养品事业部** |
+| 编码 | **CRYYBU** |
+| 主数据字段 | `yl_product.business` / `yl_warehouse.business`；报表类表用 `business_code` |
+| 履约中心 | `business_unit` 筛选项与补录单字段，与上表一致 |
+| 已废弃 | ~~奶粉事业部~~、~~NFBU~~ — 不得出现在 Tool 入参、Agent 输出表格或履约写入 |
+
+Agent 规约：
+
+- 组织边界、用户沟通、数据解读一律用 **成人营养品事业部**。
+- `propose_fulfillment_forms` 调用时**传入** `business_unit`；取值与 `yl_product.business` 一致，本环境为 **成人营养品事业部**。
+- 用户问「哪个事业部」→ `search_products` / `query_source(yl_product)` 读 `business` 后再填，不凭记忆或旧称谓（奶粉事业部）回答。
+
 ## 核心实体
 
 | 实体 | 含义 | 典型标识 |
 |------|------|----------|
+| **BusinessUnit** | 组织边界（本环境唯一：**成人营养品事业部**） | `business` / `business_code`（`CRYYBU`） |
 | **ProductSKU** | 补调最小品项 | `product_code` |
 | **Warehouse** | 基地仓或销售仓 | `site_code`；类型 Base / Sales |
 | **SalesPlan** | 月度销售计划 | 挂在 SKU×仓 快照上 |
@@ -115,7 +132,7 @@ DecisionReason explains ReplenishmentDecision
 | 读资产 | `query_*` |
 | 求指标与规则求值 | `get_*`、`eval_*`、`calc_*` |
 | 查待确认/仿真 | `list_pending_*`、`simulate_*` |
-| 调拨生命周期 | `save_*`、`update_*`、`activate_*`、`cancel_*` |
+| 调拨生命周期 | `propose_fulfillment_forms`（会话表单）→ 前端 Confirm → 履约 API；`save_*`/`activate_*` 暂禁用 |
 
 ## Agent 推理规约
 
