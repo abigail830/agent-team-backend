@@ -10,7 +10,7 @@ _ROUTER_FIX_SCRIPT = (
     "(function(){"
     "var p=location.pathname;"
     "if (p.endsWith('/index.html')) {"
-    "history.replaceState(null,'',p.replace(/\\/index\\.html$/,'/'));"
+    "history.replaceState(null,'',p.replace(/\\/index\\.html$/,''));"
     "return;"
     "}"
     "var b=document.querySelector('base');"

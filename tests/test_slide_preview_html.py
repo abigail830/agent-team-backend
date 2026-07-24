@@ -22,6 +22,7 @@ def test_prepare_slide_preview_html_injects_router_fix() -> None:
     ).decode("utf-8")
     assert "index.html" in out
     assert "history.replaceState" in out
+    assert "/index\\.html$/,'')" in out
 
 
 def test_prepare_slide_preview_html_replaces_existing_base_tag() -> None:
